@@ -393,8 +393,12 @@ const app = {
             const { time, temperature_2m, weather_code, relative_humidity_2m, rain, wind_speed_10m, wind_direction_10m } = stationWeather.hourly;
             
             const now = new Date();
-            const now_hourly_iso = now.toISOString().slice(0, 13) + ":00";
-            const currentIndex = time.indexOf(now_hourly_iso);
+            // Find the index of the time closest to the current time "now"
+            const currentIndex = time.reduce((closestIndex, currentTime, i) => {
+            const currentDiff = Math.abs(new Date(currentTime) - now);
+            const closestDiff = Math.abs(new Date(time[closestIndex]) - now);
+            return currentDiff < closestDiff ? i : closestIndex;
+            }, 0);
             if (currentIndex === -1) {
                 console.warn("Could not find current hour in weather data.");
                 this.setLoading(false, 'weather');
@@ -420,13 +424,13 @@ const app = {
             const windName = this.getWindDirectionName(wind_direction_10m[currentIndex]);
             app.elements.detailWindName.textContent = windName;
 
-            const chartLabels = time.slice(currentIndex, currentIndex + 48).map(t => new Date(t));
-            const chartData = {
-                temp: temperature_2m.slice(currentIndex, currentIndex + 48),
-                humidity: relative_humidity_2m.slice(currentIndex, currentIndex + 48),
-                rain: rain.slice(currentIndex, currentIndex + 48),
-                wind: wind_speed_10m.slice(currentIndex, currentIndex + 48),
-            };
+            const chartLabels = time.map(t => new Date(t)); // Use the full time array
+const chartData = {
+    temp: temperature_2m,       // Use the full temperature array
+    humidity: relative_humidity_2m, // Use the full humidity array
+    rain: rain,                 // Use the full rain array
+    wind: wind_speed_10m,         // Use the full wind array
+};
 
             this.renderMainWeatherChart(chartLabels, chartData, now);
             this.renderSecondaryWeatherCharts(chartLabels, chartData, now);
@@ -519,7 +523,7 @@ const app = {
                         }
                     },
                     scales: {
-                        x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } }, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+                        x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'dd-MMM HH:mm' } }, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
                         y_temp: { type: 'linear', position: 'left', title: { display: true, text: 'Suhu (°C)', color: 'var(--pertamina-red)' }, grid: { color: '#e9ecef' } },
                         y_humidity: { type: 'linear', position: 'right', title: { display: true, text: 'Kelembapan (%)', color: 'var(--pertamina-blue)' }, grid: { drawOnChartArea: false } }
                     }
