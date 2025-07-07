@@ -130,7 +130,7 @@
                     </div>
                 </div>
 
-                <h2 class="text-xl font-bold text-pertamina-blue mb-4">Grafik Prakiraan Cuaca 48 Jam</h2>
+                <h2 class="text-xl font-bold text-pertamina-blue mb-4">Grafik Prakiraan Cuaca</h2>
                 <div id="weather-charts-container" class="relative">
                     <div id="weather-chart-loader" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-20 rounded-lg"><p>Memuat data grafik...</p></div>
                     <div class="h-80">
@@ -250,5 +250,15 @@
     
     <!-- Main Application Script -->
     <script src="script.js"></script>
+    <div id="station-hint-popup" class="station-hint">
+        <div class="hint-content">
+            <p class="text-sm font-semibold">Klik salah satu stasiun di peta atau di daftar untuk melihat detail, riwayat, dan CCTV.</p>
+            <button id="dismiss-hint-button" class="hint-button">Mengerti</button>
+        </div>
+        <div class="hint-arrow"></div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
+

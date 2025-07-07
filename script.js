@@ -101,6 +101,8 @@ const app = {
         
         this.elements.navTabs = document.querySelectorAll('.nav-tab');
         this.elements.tabContents = document.querySelectorAll('.tab-content');
+        this.elements.stationHintPopup = document.getElementById('station-hint-popup');
+        this.elements.dismissHintButton = document.getElementById('dismiss-hint-button');
     },
 
     setupEventListeners() {
@@ -133,6 +135,35 @@ const app = {
                  menu.classList.remove('flex');
             });
         });
+        // Hint Popup Logic
+const hintDismissed = localStorage.getItem('siRobHintDismissed');
+
+// 1. Show the hint after a short delay if it's the user's first time
+if (!hintDismissed) {
+    setTimeout(() => {
+        if (app.elements.stationHintPopup) {
+            app.elements.stationHintPopup.classList.add('show');
+        }
+    }, 2000); // Show hint after 2 seconds
+}
+
+// 2. Hide hint permanently when "Mengerti" is clicked
+if (this.elements.dismissHintButton) {
+    this.elements.dismissHintButton.addEventListener('click', () => {
+        app.elements.stationHintPopup.classList.remove('show');
+        localStorage.setItem('siRobHintDismissed', 'true');
+    });
+}
+
+// 3. Hide hint temporarily if user clicks outside of it
+window.addEventListener('click', (e) => {
+    if (app.elements.stationHintPopup && app.elements.stationHintPopup.classList.contains('show')) {
+        // Check if the click was outside the popup
+        if (!app.elements.stationHintPopup.contains(e.target)) {
+            app.elements.stationHintPopup.classList.remove('show');
+        }
+    }
+});
     },
 
     // --- 3. API & DATA HANDLING ---
