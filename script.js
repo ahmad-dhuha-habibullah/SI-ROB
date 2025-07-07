@@ -13,12 +13,12 @@ const app = {
             { id: 3, name: "Stasiun Bengkalis Pusat", coords: [0.53975, 101.447694] }
         ],
         api: {
-            weather: 'https://api.open-meteo.com/v1/forecast?latitude=1.685167,1.666111,1.691,0.53975&longitude=101.4785,101.500667,101.429694,101.447694&hourly=temperature_2m,weather_code,relative_humidity_2m,rain,wind_speed_10m,wind_direction_10m&timezone=Asia%2FBangkok&past_days=3&elevation=NaN,NaN,NaN,NaN',
-            tidal: 'https://marine-api.open-meteo.com/v1/marine?latitude=2.045354&longitude=101.993829&timezone=Asia%2FBangkok&past_days=2&forecast_days=5&minutely_15=sea_level_height_msl'
+            weather: 'https://api.open-meteo.com/v1/forecast?latitude=1.685167,1.666111,1.691,0.53975&longitude=101.4785,101.500667,101.429694,101.447694&hourly=temperature_2m,weather_code,relative_humidity_2m,rain,wind_speed_10m,wind_direction_10m&timezone=Asia%2FBangkok&forecast_days=2&past_days=0&elevation=NaN,NaN,NaN,NaN',
+            tidal: 'https://marine-api.open-meteo.com/v1/marine?latitude=2.045354&longitude=101.993829&timezone=Asia%2FBangkok&past_days=0&forecast_days=2&minutely_15=sea_level_height_msl'
         },
         waterLevelThresholds: {
-            bahaya: 1.5,
-            waspada: 0.8
+            bahaya: 1.8,
+            waspada: 1.5
         },
         updateInterval: 300000 // 5 minutes
     },
@@ -572,7 +572,7 @@ const chartData = {
                     scales: {
                         x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'dd-MMM HH:mm' } }, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
                         y_temp: { type: 'linear', position: 'left', title: { display: true, text: 'Suhu (°C)', color: 'var(--pertamina-red)' }, grid: { color: '#e9ecef' } },
-                        y_humidity: { type: 'linear', position: 'right', title: { display: true, text: 'Kelembapan (%)', color: 'var(--pertamina-blue)' }, grid: { drawOnChartArea: false } }
+                        y_humidity: { type: 'linear', position: 'right', title: { display: true, text: 'Kelembaban (%)', color: 'var(--pertamina-blue)' }, grid: { drawOnChartArea: false } }
                     }
                 }
             });
@@ -672,10 +672,10 @@ const chartData = {
                             }
                         }
                     },
-                    scales: {
-                        x: { type: 'time', time: { unit: 'day', tooltipFormat: 'MMM dd, HH:mm' }, grid: { display: false } },
-                        y: { title: { display: true, text: 'Ketinggian (m MSL)' }, grid: { color: '#e2e8f0' } }
-                    }
+     scales: {
+     x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'dd-MMM HH:mm' } }, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 4 } },
+     y: { title: { display: true, text: 'Ketinggian (m MSL)' }, grid: { color: '#e2e8f0' } }
+}
                 }
             });
             this.setLoading(false, 'chart');
@@ -771,19 +771,40 @@ const chartData = {
             }
         },
         
-        getWmoCodeInfo(code) {
-            const wmo = {
-                0: {d: "Cerah", i: "sun"}, 1: {d: "Cerah Berawan", i: "cloud-sun"},
-                2: {d: "Berawan", i: "cloud"}, 3: {d: "Sangat Berawan", i: "clouds"},
-                45: {d: "Kabut", i: "cloud-fog"}, 48: {d: "Kabut Tebal", i: "cloud-fog"},
-                51: {d: "Gerimis Ringan", i: "cloud-drizzle"}, 53: {d: "Gerimis Sedang", i: "cloud-drizzle"}, 55: {d: "Gerimis Lebat", i: "cloud-drizzle"},
-                61: {d: "Hujan Ringan", i: "cloud-rain"}, 63: {d: "Hujan Sedang", i: "cloud-rain"}, 65: {d: "Hujan Lebat", i: "cloud-rain-wind"},
-                80: {d: "Hujan Lokal", i: "cloud-lightning"}, 81: {d: "Hujan Lokal Lebat", i: "cloud-lightning"},
-                95: {d: "Badai Petir", i: "zap"}, 96: {d: "Badai Petir & Hujan Es", i: "zap"}
-            };
-            const info = wmo[code] || { d: "Cuaca Tidak Diketahui", i: "help-circle" };
-            return { description: info.d, icon: info.i };
-        },
+getWmoCodeInfo(code) {
+    const wmo = {
+        0: {d: "Cerah", i: "sun"},
+        1: {d: "Cerah Berawan", i: "cloud-sun"},
+        2: {d: "Berawan", i: "cloud"},
+        3: {d: "Sangat Berawan", i: "clouds"},
+        45: {d: "Kabut", i: "cloud-fog"},
+        48: {d: "Kabut Tebal", i: "cloud-fog"},
+        51: {d: "Gerimis Ringan", i: "cloud-drizzle"},
+        53: {d: "Gerimis", i: "cloud-drizzle"},
+        55: {d: "Gerimis Lebat", i: "cloud-drizzle"},
+        56: {d: "Gerimis Beku Ringan", i: "cloud-drizzle"},
+        57: {d: "Gerimis Beku Lebat", i: "cloud-drizzle"},
+        61: {d: "Hujan Ringan", i: "cloud-rain"},
+        63: {d: "Hujan", i: "cloud-rain"},
+        65: {d: "Hujan Lebat", i: "cloud-rain-wind"},
+        66: {d: "Hujan Beku Ringan", i: "cloud-rain"},
+        67: {d: "Hujan Beku Lebat", i: "cloud-rain-wind"},
+        71: {d: "Turun Salju Ringan", i: "cloud-snow"},
+        73: {d: "Turun Salju", i: "cloud-snow"},
+        75: {d: "Turun Salju Lebat", i: "cloud-snow"},
+        77: {d: "Butiran Salju", i: "cloud-snow"},
+        80: {d: "Hujan Lokal Ringan", i: "cloud-lightning-rain"},
+        81: {d: "Hujan Lokal", i: "cloud-lightning-rain"},
+        82: {d: "Hujan Lokal Lebat", i: "cloud-lightning-rain"},
+        85: {d: "Hujan Salju Ringan", i: "cloud-snow"},
+        86: {d: "Hujan Salju Lebat", i: "cloud-snow"},
+        95: {d: "Badai Petir", i: "zap"},
+        96: {d: "Badai Petir & Hujan Es", i: "zap"},
+        99: {d: "Badai Petir & Hujan Es Lebat", i: "zap"},
+    };
+    const info = wmo[code] || { d: "Cuaca Tidak Diketahui", i: "help-circle" };
+    return { description: info.d, icon: info.i };
+},
 
         getWindDirectionName(deg) {
             const directions = ['Utara', 'Timur Laut', 'Timur', 'Tenggara', 'Selatan', 'Barat Daya', 'Barat', 'Barat Laut'];
