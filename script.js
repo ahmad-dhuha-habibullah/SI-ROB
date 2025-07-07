@@ -528,7 +528,7 @@ const chartData = {
                             }
                         },
                         { 
-                            label: 'Kelembapan', 
+                            label: 'kelembaban', 
                             data: data.humidity, 
                             borderColor: 'var(--pertamina-blue)', 
                             backgroundColor: humidityGradient, 
@@ -846,7 +846,58 @@ getWmoCodeInfo(code) {
                 toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
-        }
+        },
+        downloadDataAsCSV(type) {
+            console.log(`Attempting to download ${type} data...`);
+            let data;
+            let headers;
+            let filename;
+
+            if (type === 'weather') {
+                const stationId = app.state.selectedWeatherStationId;
+                const stationWeather = app.state.weatherData[stationId];
+                if (!stationWeather) {
+                    this.showToast('Weather data not available.', 'error');
+                    return;
+                }
+                headers = ['Time', 'Temperature (°C)', 'Humidity (%)', 'Rain (mm)', 'Wind Speed (km/h)'];
+                data = stationWeather.hourly.time.map((t, i) => [
+                    t,
+                    stationWeather.hourly.temperature_2m[i],
+                    stationWeather.hourly.relative_humidity_2m[i],
+                    stationWeather.hourly.rain[i],
+                    stationWeather.hourly.wind_speed_10m[i]
+                ]);
+                filename = `weather_data_station_${stationId}.csv`;
+            } else if (type === 'tidal') {
+                if (!app.state.tidalData || !app.state.tidalData.minutely_15) {
+                    this.showToast('Tidal data not available.', 'error');
+                    return;
+                }
+                headers = ['Time', 'Sea Level (m)'];
+                data = app.state.tidalData.minutely_15.time.map((t, i) => [
+                    t,
+                    app.state.tidalData.minutely_15.sea_level_height_msl[i]
+                ]);
+                filename = 'tidal_data.csv';
+            } else {
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8," 
+                + headers.join(",") + "\n" 
+                + data.map(e => e.join(",")).join("\n");
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", filename);
+            document.body.appendChild(link);
+            
+            link.click();
+            link.remove();
+            this.showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} data downloaded.`, 'success');
+        },
     }
 };
 
