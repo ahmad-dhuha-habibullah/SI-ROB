@@ -103,6 +103,8 @@ const app = {
         this.elements.tabContents = document.querySelectorAll('.tab-content');
         this.elements.stationHintPopup = document.getElementById('station-hint-popup');
         this.elements.dismissHintButton = document.getElementById('dismiss-hint-button');
+        this.elements.downloadWeatherCsv = document.getElementById('download-weather-csv');
+        this.elements.downloadTidalCsv = document.getElementById('download-tidal-csv');
     },
 
     setupEventListeners() {
@@ -164,7 +166,21 @@ window.addEventListener('click', (e) => {
         }
     }
 });
-    },
+    
+// Add these to the end of the setupEventListeners function
+if (this.elements.downloadWeatherCsv) {
+    this.elements.downloadWeatherCsv.addEventListener('click', () => {
+        this.ui.downloadDataAsCSV('weather');
+    });
+}
+
+if (this.elements.downloadTidalCsv) {
+    this.elements.downloadTidalCsv.addEventListener('click', () => {
+        this.ui.downloadDataAsCSV('tidal');
+    });
+}
+
+},
 
     // --- 3. API & DATA HANDLING ---
     api: {

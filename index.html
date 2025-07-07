@@ -131,6 +131,12 @@
                 </div>
 
                 <h2 class="text-xl font-bold text-pertamina-blue mb-4">Grafik Prakiraan Cuaca</h2>
+                <div class="flex justify-between items-center mb-4">
+    <button id="download-weather-csv" class="download-button">
+        <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+        Download CSV
+    </button>
+</div>
                 <div id="weather-charts-container" class="relative">
                     <div id="weather-chart-loader" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-20 rounded-lg"><p>Memuat data grafik...</p></div>
                     <div class="h-80">
@@ -154,6 +160,12 @@
         <div id="pasut-content" class="tab-content hidden">
             <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
                 <h1 class="text-2xl font-bold text-pertamina-blue mb-2">Prediksi Pasang Surut (Sea Level)</h1>
+                <div class="flex justify-between items-center mb-2">
+    <button id="download-tidal-csv" class="download-button">
+        <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+        Download CSV
+    </button>
+</div>
                 <p class="text-gray-600 mb-6">Grafik ketinggian permukaan air laut (Mean Sea Level), termasuk data historis dan prakiraan untuk 5 hari kedepan.</p>
                 <div id="tidal-chart-container" class="mt-6 h-96 relative">
                     <canvas id="tidal-chart"></canvas>

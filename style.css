@@ -324,3 +324,21 @@ body {
 .hint-button:hover {
     background-color: #f0f0f0;
 }
+/* --- 10. Download Button --- */
+.download-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.8rem;
+    background-color: var(--pertamina-green);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.download-button:hover {
+    background-color: #89a320; /* Darker green */
+}
