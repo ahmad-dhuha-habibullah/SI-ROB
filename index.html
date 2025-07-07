@@ -117,12 +117,16 @@
                         <div class="weather-detail-card"><i data-lucide="droplets" class="w-8 h-8 text-pertamina-blue"></i><div><p class="text-sm text-gray-500">Kelembapan</p><p id="detail-humidity" class="font-bold text-lg">--%</p></div></div>
                         <div class="weather-detail-card"><i data-lucide="umbrella" class="w-8 h-8 text-blue-500"></i><div><p class="text-sm text-gray-500">Curah Hujan</p><p id="detail-rain" class="font-bold text-lg">-- mm</p></div></div>
                         <div class="weather-detail-card"><i data-lucide="wind" class="w-8 h-8 text-gray-500"></i><div><p class="text-sm text-gray-500">Kecepatan Angin</p><p id="detail-wind-speed" class="font-bold text-lg">-- km/j</p></div></div>
-                        <div class="weather-detail-card col-span-2 sm:col-span-1">
-                            <div class="flex items-center justify-center w-full gap-2">
-                                <i data-lucide="navigation" id="wind-direction-arrow" class="w-8 h-8 text-pertamina-blue transition-transform duration-500 ease-in-out"></i>
-                                <p id="detail-wind-dir" class="font-bold text-lg">---°</p>
-                            </div>
-                        </div>
+<div class="weather-detail-card col-span-2 sm:col-span-1">
+    <i data-lucide="navigation" id="wind-direction-arrow" class="w-8 h-8 text-pertamina-blue transition-transform duration-500 ease-in-out flex-shrink-0"></i>
+    <div class="text-left">
+        <p class="text-sm text-gray-500">Arah Angin</p>
+        <p class="font-bold text-lg leading-tight">
+            <span id="detail-wind-dir">--°</span>
+            <span id="detail-wind-name" class="block text-sm font-medium text-pertamina-blue">--</span>
+        </p>
+    </div>
+</div>
                     </div>
                 </div>
 

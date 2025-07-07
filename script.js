@@ -1,6 +1,6 @@
 /**
  * SI-ROB Dashboard Application
- * Version 2.6 - Enhanced Chart Visualization
+ * Version 3.0 - Final Rotation & Color Fixes
  * Author: Gemini
  */
 const app = {
@@ -37,7 +37,7 @@ const app = {
 
     // --- 2. INITIALIZATION ---
     init() {
-        console.log("SI-ROB Dashboard v2.6 Initializing...");
+        console.log("SI-ROB Dashboard v3.0 Initializing...");
         this.cacheDOMElements();
         this.setupEventListeners();
         this.ui.updateClock();
@@ -86,9 +86,9 @@ const app = {
             'general-alert', 'alert-icon-container', 'alert-icon', 'alert-title', 'alert-message',
             'summary-container', 'station-list', 'station-select', 'current-weather-location',
             'weather-icon-main', 'weather-description', 'weather-temp-current',
-            'detail-temp', 'detail-humidity', 'detail-rain', 'detail-wind-speed', 'detail-wind-dir',
+            'detail-temp', 'detail-humidity', 'detail-rain', 'detail-wind-speed', 'detail-wind-dir', 'detail-wind-name',
             'wind-direction-arrow', 'weather-charts-container', 'weather-chart-loader',
-            'main-weather-chart', 'rain-chart', 'wind-chart', // Updated chart IDs
+            'main-weather-chart', 'rain-chart', 'wind-chart',
             'tidal-chart-container', 'tidal-chart', 'chart-loader',
             'history-modal', 'close-history-modal', 'history-modal-title', 'history-chart', 'history-chart-loader',
             'cctv-modal', 'close-cctv-modal', 'cctv-modal-title', 'water-level-overlay',
@@ -209,7 +209,6 @@ const app = {
             this.updateStationList();
             this.updateMapMarkers();
             this.renderActiveTab();
-            lucide.createIcons();
         },
         
         renderActiveTab() {
@@ -220,6 +219,8 @@ const app = {
                 case 'pasut':
                     this.renderTidalChart();
                     break;
+                default:
+                    lucide.createIcons();
             }
         },
 
@@ -325,6 +326,9 @@ const app = {
             app.elements.generalAlert.style.borderColor = info.color;
             app.elements.generalAlert.classList.add('border-l-4');
             app.elements.alertIconContainer.style.backgroundColor = info.color;
+            lucide.createIcons({
+                nodes: [app.elements.alertIcon]
+            });
         },
         
         updateSummary() {
@@ -345,7 +349,9 @@ const app = {
                 <div class="flex justify-between items-center"><span class="font-semibold flex items-center"><i data-lucide="wind" class="w-4 h-4 mr-2 text-gray-500"></i>Kecepatan Angin</span><span>${weatherHourly.wind_speed_10m[weatherIdx]} km/j</span></div>
                 <div class="flex justify-between items-center"><span class="font-semibold flex items-center"><i data-lucide="waves" class="w-4 h-4 mr-2 text-gray-500"></i>Pasang Tertinggi (48j)</span><span class="font-bold text-pertamina-blue">${maxTide.toFixed(2)} m</span></div>
             `;
-            lucide.createIcons();
+            lucide.createIcons({
+                 nodes: app.elements.summaryContainer.querySelectorAll('[data-lucide]')
+            });
         },
 
         updateStationList() {
@@ -395,7 +401,6 @@ const app = {
                 return;
             }
 
-            // Update current weather display
             const wmoInfo = this.getWmoCodeInfo(weather_code[currentIndex]);
             app.elements.currentWeatherLocation.textContent = station.name;
             app.elements.weatherIconMain.setAttribute('data-lucide', wmoInfo.icon);
@@ -407,9 +412,14 @@ const app = {
             app.elements.detailRain.textContent = `${rain[currentIndex]} mm`;
             app.elements.detailWindSpeed.textContent = `${wind_speed_10m[currentIndex]} km/j`;
             app.elements.detailWindDir.textContent = `${wind_direction_10m[currentIndex]}°`;
-            app.elements.windDirectionArrow.style.transform = `rotate(${wind_direction_10m[currentIndex]}deg)`;
+            
+            // FIX: Correct the arrow rotation. The `navigation` icon points NE (45deg), and wind direction is "from", so we point 180deg away.
+            // Final rotation = (API_degrees + 180) - 45
+            app.elements.windDirectionArrow.style.transform = `rotate(${wind_direction_10m[currentIndex] + 135}deg)`;
+            
+            const windName = this.getWindDirectionName(wind_direction_10m[currentIndex]);
+            app.elements.detailWindName.textContent = windName;
 
-            // --- NEW: Enhanced Chart Rendering ---
             const chartLabels = time.slice(currentIndex, currentIndex + 48).map(t => new Date(t));
             const chartData = {
                 temp: temperature_2m.slice(currentIndex, currentIndex + 48),
@@ -418,16 +428,25 @@ const app = {
                 wind: wind_speed_10m.slice(currentIndex, currentIndex + 48),
             };
 
-            this.renderMainWeatherChart(chartLabels, chartData);
-            this.renderSecondaryWeatherCharts(chartLabels, chartData);
+            this.renderMainWeatherChart(chartLabels, chartData, now);
+            this.renderSecondaryWeatherCharts(chartLabels, chartData, now);
             
+            // FIX: Call lucide.createIcons() BEFORE trying to modify the generated SVG
             lucide.createIcons();
+            
+            const umbrellaSvg = document.querySelector('.weather-detail-card svg.lucide-umbrella');
+            if (umbrellaSvg) {
+                umbrellaSvg.classList.remove('text-blue-500');
+                umbrellaSvg.classList.add('text-gray-700');
+            }
+
             this.setLoading(false, 'weather');
         },
 
-        renderMainWeatherChart(labels, data) {
+        renderMainWeatherChart(labels, data, now) {
             const canvas = app.elements.mainWeatherChart;
             const ctx = canvas.getContext('2d');
+            const nowValue = now.valueOf();
 
             const tempGradient = ctx.createLinearGradient(0, 0, 0, 320);
             tempGradient.addColorStop(0, 'rgba(186, 49, 59, 0.4)');
@@ -443,8 +462,34 @@ const app = {
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Suhu', data: data.temp, borderColor: 'var(--pertamina-red)', backgroundColor: tempGradient, yAxisID: 'y_temp', fill: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 5 },
-                        { label: 'Kelembapan', data: data.humidity, borderColor: 'var(--pertamina-blue)', backgroundColor: humidityGradient, yAxisID: 'y_humidity', fill: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 5 }
+                        { 
+                            label: 'Suhu', 
+                            data: data.temp, 
+                            borderColor: 'var(--pertamina-red)', 
+                            backgroundColor: tempGradient, 
+                            yAxisID: 'y_temp', 
+                            fill: true, 
+                            tension: 0.4, 
+                            pointRadius: 0, 
+                            pointHoverRadius: 5,
+                            segment: {
+                                borderDash: ctx => (ctx.p1.parsed.x > nowValue ? [5, 5] : undefined),
+                            }
+                        },
+                        { 
+                            label: 'Kelembapan', 
+                            data: data.humidity, 
+                            borderColor: 'var(--pertamina-blue)', 
+                            backgroundColor: humidityGradient, 
+                            yAxisID: 'y_humidity', 
+                            fill: true, 
+                            tension: 0.4, 
+                            pointRadius: 0, 
+                            pointHoverRadius: 5,
+                            segment: {
+                                borderDash: ctx => (ctx.p1.parsed.x > nowValue ? [5, 5] : undefined),
+                            }
+                        }
                     ]
                 },
                 options: {
@@ -452,7 +497,26 @@ const app = {
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { position: 'top', labels: { usePointStyle: true } },
-                        tooltip: { enabled: true, backgroundColor: '#fff', titleColor: '#333', bodyColor: '#333', borderColor: '#ddd', borderWidth: 1, padding: 10, usePointStyle: true }
+                        tooltip: { enabled: true, backgroundColor: '#fff', titleColor: '#333', bodyColor: '#333', borderColor: '#ddd', borderWidth: 1, padding: 10, usePointStyle: true },
+                        annotation: {
+                            annotations: {
+                                nowLine: {
+                                    type: 'line',
+                                    xMin: now,
+                                    xMax: now,
+                                    borderColor: 'var(--pertamina-red)',
+                                    borderWidth: 2,
+                                    label: {
+                                        content: 'Sekarang',
+                                        display: true,
+                                        position: 'start',
+                                        color: 'white',
+                                        backgroundColor: 'var(--pertamina-red)',
+                                        font: { weight: 'bold' }
+                                    }
+                                }
+                            }
+                        }
                     },
                     scales: {
                         x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } }, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
@@ -463,7 +527,8 @@ const app = {
             });
         },
 
-        renderSecondaryWeatherCharts(labels, data) {
+        renderSecondaryWeatherCharts(labels, data, now) {
+            const nowValue = now.valueOf();
             const sharedOptions = {
                 responsive: true, maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
@@ -471,7 +536,6 @@ const app = {
                 scales: { x: { display: false }, y: { grid: { color: '#e9ecef' }, ticks: { maxTicksLimit: 4 } } }
             };
 
-            // Rain Chart
             if (app.state.charts.rain) app.state.charts.rain.destroy();
             app.state.charts.rain = new Chart(app.elements.rainChart, {
                 type: 'bar',
@@ -479,15 +543,26 @@ const app = {
                 options: sharedOptions
             });
 
-            // Wind Chart
             if (app.state.charts.wind) app.state.charts.wind.destroy();
             app.state.charts.wind = new Chart(app.elements.windChart, {
                 type: 'line',
-                data: { labels: labels, datasets: [{ data: data.wind, borderColor: '#64748b', backgroundColor: 'rgba(100, 116, 139, 0.1)', fill: true, tension: 0.4, pointRadius: 0 }] },
+                data: { 
+                    labels: labels, 
+                    datasets: [{ 
+                        data: data.wind, 
+                        borderColor: '#64748b', 
+                        backgroundColor: 'rgba(100, 116, 139, 0.1)', 
+                        fill: true, 
+                        tension: 0.4, 
+                        pointRadius: 0,
+                        segment: {
+                            borderDash: ctx => (ctx.p1.parsed.x > nowValue ? [5, 5] : undefined),
+                        }
+                    }] 
+                },
                 options: sharedOptions
             });
 
-            // Synchronize tooltips
             this.synchronizeCharts([app.state.charts.mainWeather, app.state.charts.rain, app.state.charts.wind]);
         },
         
@@ -659,11 +734,17 @@ const app = {
             return { description: info.d, icon: info.i };
         },
 
+        getWindDirectionName(deg) {
+            const directions = ['Utara', 'Timur Laut', 'Timur', 'Tenggara', 'Selatan', 'Barat Daya', 'Barat', 'Barat Laut'];
+            const index = Math.round(deg / 45) % 8;
+            return directions[index];
+        },
+
         getStatusInfo(status) {
             const statuses = {
                 Bahaya: { c: 'var(--status-bahaya)', bg: '#fee2e2', i: 'shield-alert', t: 'BAHAYA', m: 'Level air berbahaya terdeteksi di beberapa titik.'},
                 Waspada: { c: 'var(--status-waspada)', bg: '#fef3c7', i: 'shield-check', t: 'WASPADA', m: 'Level air meningkat, potensi rob. Harap waspada.'},
-                Aman: { c: 'var(--status-aman)', bg: '#dcfce7', i: 'shield-check', t: 'AMAN', m: 'Semua stasiun dalam kondisi normal'}
+                Aman: { c: 'var(--status-aman)', bg: '#dcfce7', i: 'shield-check', t: 'AMAN', m: 'Semua stasiun dalam kondisi normal dan terkendali.'}
             };
             const s = statuses[status];
             return { color: s.c, bgColor: s.bg, icon: s.i, text: s.t, message: s.m };
