@@ -1,8 +1,3 @@
-/**
- * SI-ROB Dashboard Application
- * Version 5.2 - Icon Fix
- * Author: Gemini
- */
 const app = {
     // --- 1. CONFIGURATION & STATE ---
     config: {
@@ -30,16 +25,24 @@ const app = {
         markers: {},
         charts: {},
         selectedWeatherStationId: 0,
-        selectedDate: new Date().toISOString().slice(0, 10),
+        selectedDate: null, // Will be set in init()
         isLoading: true,
         activeTab: 'beranda',
         dayHourlyData: {}, // Store current day's hourly data for interactions
     },
     elements: {},
 
+    getLocalDateString(date) {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    },
+
     // --- 2. INITIALIZATION ---
     init() {
-        console.log("SI-ROB Dashboard v5.2 Initializing...");
+        console.log("SI-ROB Dashboard v5.3 Initializing...");
+        this.state.selectedDate = this.getLocalDateString(new Date());
         this.cacheDOMElements();
         this.setupEventListeners();
         this.ui.updateClock();
@@ -79,7 +82,8 @@ const app = {
             'tidal-chart-container', 'tidal-chart', 'chart-loader',
             'history-modal', 'close-history-modal', 'history-modal-title', 'history-chart', 'history-chart-loader',
             'cctv-modal', 'close-cctv-modal', 'cctv-modal-title', 'water-level-overlay',
-            'virtual-tide-staff', 'water-level-text'
+            'virtual-tide-staff', 'water-level-text',
+            'download-tidal-csv' // <-- ADD THIS LINE
         ];
         ids.forEach(id => {
             const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
@@ -97,7 +101,6 @@ const app = {
         this.elements.mobileMenuButton.addEventListener('click', () => {
             const menu = this.elements.mobileNavigationMenu;
             menu.classList.toggle('hidden');
-            menu.classList.toggle('flex');
         });
         this.elements.stationSelect.addEventListener('change', e => {
             this.state.selectedWeatherStationId = parseInt(e.target.value);
@@ -118,6 +121,10 @@ const app = {
             this.elements.stationHintPopup.classList.remove('show');
             localStorage.setItem('siRobHintDismissed', 'true');
         });
+
+        // --- NEW CODE START ---
+        this.elements.downloadTidalCsv.addEventListener('click', () => this.data.downloadTidalDataAsCSV());
+        // --- NEW CODE END ---
     },
 
     // --- 3. API & DATA HANDLING ---
@@ -159,7 +166,36 @@ const app = {
             if (level > app.config.waterLevelThresholds.bahaya) return "Bahaya";
             if (level > app.config.waterLevelThresholds.waspada) return "Waspada";
             return "Aman";
+        },
+
+       
+        downloadTidalDataAsCSV() {
+            if (!app.state.tidalData || !app.state.tidalData.minutely_15) {
+                app.ui.showToast("Data pasang surut belum tersedia.", "error");
+                return;
+            }
+        
+            const { time, sea_level_height_msl } = app.state.tidalData.minutely_15;
+            
+            let csvContent = "data:text/csv;charset=utf-8," 
+                           + '"Waktu","Ketinggian Permukaan Laut (m)"\n';
+            
+            time.forEach((t, index) => {
+                const formattedTime = t.replace('T', ' ');
+                const row = `"${formattedTime}","${sea_level_height_msl[index]}"\n`;
+                csvContent += row;
+            });
+        
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "prediksi_pasang_surut.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            app.ui.showToast("Unduhan CSV dimulai...", "success");
         }
+
     },
     
     // --- 4. UI & RENDERING ---
@@ -191,7 +227,7 @@ const app = {
 
         updateClock() {
             const now = new Date();
-            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' };
+            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Jakarta' };
             const timeString = now.toLocaleDateString('id-ID', options).replace(/\./g, ':');
             app.elements.datetime.textContent = timeString;
             app.elements.mobileDatetime.textContent = timeString;
@@ -247,22 +283,32 @@ const app = {
             app.state.selectedDate = dateString;
             const stationWeather = app.state.weatherData[app.state.selectedWeatherStationId];
             const { hourly } = stationWeather;
-            const startIndex = hourly.time.findIndex(t => t.startsWith(dateString));
-            if (startIndex === -1) return;
         
+            // Find the start and end index for the selected date's 24-hour forecast
+            const startIndex = hourly.time.findIndex(t => t.startsWith(dateString));
+            if (startIndex === -1) {
+                console.error("No data found for the selected date:", dateString);
+                return; // Exit if no data for this day
+            }
+            const endIndex = startIndex + 24;
+        
+            // Store the 24-hour forecast for the selected day
             app.state.dayHourlyData = Object.keys(hourly).reduce((acc, key) => {
-                acc[key] = hourly[key].slice(startIndex, startIndex + 24);
+                acc[key] = hourly[key].slice(startIndex, endIndex);
                 return acc;
             }, {});
             
-            let initialDisplayIndex = app.state.dayHourlyData.time.findIndex(t => t.endsWith("12:00"));
-            if (dateString === new Date().toISOString().slice(0, 10)) {
+            let initialDisplayIndex = 0; // Default to the first hour of the day (00:00)
+            
+            // If the selected date is today, find the current hour to display first
+            if (dateString === app.getLocalDateString(new Date())) {
                 const now = new Date();
-                initialDisplayIndex = app.state.dayHourlyData.time.reduce((closest, curr, i) => 
-                    (Math.abs(new Date(curr) - now) < Math.abs(new Date(app.state.dayHourlyData.time[closest]) - now) ? i : closest), 0);
+                // Find the first forecast time that is greater than or equal to the current time
+                const futureIndex = app.state.dayHourlyData.time.findIndex(t => new Date(t) >= now);
+                initialDisplayIndex = (futureIndex !== -1) ? futureIndex : 23; // Use found index or last hour
             }
-             if (initialDisplayIndex === -1) initialDisplayIndex = 0;
         
+            // Update the main weather display and the hourly charts
             this.updateWeatherDisplayForHour(initialDisplayIndex);
             
             const forecastTimes = app.state.dayHourlyData.time.map(t => new Date(t));
@@ -298,6 +344,7 @@ const app = {
                         <div class="daily-forecast-icon">
                             <i data-lucide="${wmoInfo.icon}" class="w-8 h-8 mx-auto" style="color:${wmoInfo.color};"></i>
                         </div>
+                        <div class="daily-forecast-caption">${wmoInfo.description}</div>
                         <div class="daily-forecast-temps">
                             <span>${Math.round(dailyData.temperature_2m_max[i])}°</span>
                             <span class="low-temp">${Math.round(dailyData.temperature_2m_min[i])}°</span>
@@ -410,7 +457,7 @@ const app = {
             if ([3].includes(code)) { d = "Sangat Berawan"; i = "cloud"; c = "#94a3b8"; }
             if ([45, 48].includes(code)) { d = "Kabut"; i = "cloud-fog"; c = "#a1a1aa"; }
             if (code >= 51 && code <= 67) { d = "Hujan"; i = "cloud-rain"; c = "#3b82f6"; }
-            if (code >= 80 && code <= 82) { d = "Hujan Lokal"; i = "cloud-lightning"; c = "#3b82f6"; } // <-- Corrected Icon Name
+            if (code >= 80 && code <= 82) { d = "Hujan Lokal"; i = "cloud-lightning"; c = "#3b82f6"; }
             if (code >= 95 && code <= 99) { d = "Badai Petir"; i = "zap"; c = "#8b5cf6"; }
             return { description: d, icon: i, color: c };
         },
