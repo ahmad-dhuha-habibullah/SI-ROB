@@ -17,8 +17,8 @@ const app = {
             tidal: 'https://marine-api.open-meteo.com/v1/marine?latitude=2.045354&longitude=101.993829&timezone=Asia%2FBangkok&past_days=0&forecast_days=2&minutely_15=sea_level_height_msl'
         },
         waterLevelThresholds: {
-            bahaya: 1.8,
-            waspada: 1.5
+            bahaya: 2,
+            waspada: 1.8
         },
         updateInterval: 300000 // 5 minutes
     },
