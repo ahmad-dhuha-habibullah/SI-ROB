@@ -1,6 +1,6 @@
 /**
  * SI-ROB Dashboard Application
- * Version 5.0 - Final Polished Interactive UI
+ * Version 5.2 - Icon Fix
  * Author: Gemini
  */
 const app = {
@@ -33,12 +33,13 @@ const app = {
         selectedDate: new Date().toISOString().slice(0, 10),
         isLoading: true,
         activeTab: 'beranda',
+        dayHourlyData: {}, // Store current day's hourly data for interactions
     },
     elements: {},
 
     // --- 2. INITIALIZATION ---
     init() {
-        console.log("SI-ROB Dashboard v5.0 Initializing...");
+        console.log("SI-ROB Dashboard v5.2 Initializing...");
         this.cacheDOMElements();
         this.setupEventListeners();
         this.ui.updateClock();
@@ -87,8 +88,6 @@ const app = {
         
         this.elements.navTabs = document.querySelectorAll('.nav-tab');
         this.elements.tabContents = document.querySelectorAll('.tab-content');
-        this.elements.forecastTabs = document.querySelectorAll('.forecast-tab');
-        this.elements.forecastContentPanels = document.querySelectorAll('.forecast-content-panel');
         this.elements.stationHintPopup = document.getElementById('station-hint-popup');
         this.elements.dismissHintButton = document.getElementById('dismiss-hint-button');
     },
@@ -102,7 +101,7 @@ const app = {
         });
         this.elements.stationSelect.addEventListener('change', e => {
             this.state.selectedWeatherStationId = parseInt(e.target.value);
-            this.state.selectedDate = new Date().toISOString().slice(0, 10);
+            this.state.selectedDate = new Date().toISOString().slice(0, 10); // Reset to today
             this.ui.renderWeatherTab();
         });
         this.elements.closeHistoryModal.addEventListener('click', () => this.ui.closeModal('history'));
@@ -110,7 +109,6 @@ const app = {
         this.elements.mobileNavigationMenu.querySelectorAll('.nav-tab').forEach(tab => {
             tab.addEventListener('click', () => this.elements.mobileNavigationMenu.classList.add('hidden'));
         });
-        this.elements.forecastTabs.forEach(tab => tab.addEventListener('click', e => this.ui.showForecastTab(e.currentTarget.dataset.forecastTab)));
         
         const hintDismissed = localStorage.getItem('siRobHintDismissed');
         if (!hintDismissed) {
@@ -142,7 +140,6 @@ const app = {
 
     data: {
         processAllData() {
-            // This function remains the same as original
             if (!app.state.tidalData || !app.state.tidalData.minutely_15) return;
             const { time, sea_level_height_msl } = app.state.tidalData.minutely_15;
             const now = new Date();
@@ -184,8 +181,11 @@ const app = {
         setLoading(isLoading, scope = 'chart') {
             app.state.isLoading = isLoading;
             const display = isLoading ? 'flex' : 'none';
+            const loader = app.elements.weatherChartLoader;
+            if (scope === 'all' || scope === 'weather') {
+                loader.classList.toggle('hidden', !isLoading);
+            }
             app.elements.chartLoader.style.display = (scope === 'all' || scope === 'chart') ? display : 'none';
-            app.elements.weatherChartLoader.style.display = (scope === 'all' || scope === 'weather') ? display : 'none';
             app.elements.historyChartLoader.style.display = (scope === 'all' || scope === 'history') ? display : 'none';
         },
 
@@ -197,8 +197,8 @@ const app = {
             app.elements.mobileDatetime.textContent = timeString;
         },
         
-        showTab(tabId) {
-            if (app.state.activeTab === tabId && tabId !== 'beranda') return;
+        showTab(tabId, isInitial = false) {
+            if (!isInitial && app.state.activeTab === tabId) return;
             app.state.activeTab = tabId;
             app.elements.tabContents.forEach(c => c.classList.add('hidden'));
             app.elements.navTabs.forEach(t => t.classList.remove('active'));
@@ -208,18 +208,17 @@ const app = {
             if (tabId === 'beranda' && app.state.map) setTimeout(() => app.state.map.invalidateSize(), 100);
         },
         
-        initializeMap() { /* This function remains the same */ if (app.state.map) return; app.state.map = L.map(app.elements.map).setView([1.2, 101.45], 9); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(app.state.map); app.config.stations.forEach(s => { app.state.markers[s.id] = L.marker(s.coords).addTo(app.state.map); }); },
-        updateMapMarkers() { /* This function remains the same */ if (!app.state.map || app.state.stationData.length === 0) return; app.state.stationData.forEach(station => { const marker = app.state.markers[station.id]; const statusInfo = this.getStatusInfo(station.status); marker.setIcon(this.createMarkerIcon(statusInfo.color)); marker.unbindPopup().bindPopup(this.createPopupContent(station, statusInfo)); }); },
-        createMarkerIcon(color) { /* This function remains the same */ const html = `<div class="relative flex justify-center items-center"><div class="pulse" style="background-color: ${color};"></div><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="${color}" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="relative map-marker-svg"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>`; return L.divIcon({ html, className: '', iconSize: [28, 28], iconAnchor: [14, 28] }); },
-        createPopupContent(station, statusInfo) { /* This function remains the same */ const container = document.createElement('div'); container.innerHTML = `<div class="popup-title">${station.name}</div><div class="text-sm space-y-1"><div class="flex justify-between"><span>Status:</span> <strong style="color: ${statusInfo.color};">${station.status}</strong></div><div class="flex justify-between"><span>Ketinggian:</span> <strong>${station.waterLevel.toFixed(2)} m</strong></div></div><div class="mt-3 flex space-x-2"><button class="popup-button popup-button-primary flex-1" data-action="history">Riwayat</button><button class="popup-button popup-button-secondary flex-1" data-action="cctv">CCTV</button></div>`; container.querySelector('[data-action="history"]').addEventListener('click', () => this.openModal('history', station.id)); container.querySelector('[data-action="cctv"]').addEventListener('click', () => this.openModal('cctv', station.id)); return container; },
-        updateGeneralAlert() { /* This function remains the same */ const counts = app.state.stationData.reduce((acc, s) => { acc[s.status] = (acc[s.status] || 0) + 1; return acc; }, {}); const overallStatus = counts.Bahaya > 0 ? "Bahaya" : counts.Waspada > 0 ? "Waspada" : "Aman"; const info = this.getStatusInfo(overallStatus); app.elements.alertIcon.setAttribute('data-lucide', info.icon); app.elements.alertTitle.textContent = `Status Peringatan: ${info.text}`; app.elements.alertMessage.textContent = info.message; app.elements.generalAlert.style.backgroundColor = info.bgColor; app.elements.generalAlert.style.borderColor = info.color; app.elements.generalAlert.classList.add('border-l-4'); app.elements.alertIconContainer.style.backgroundColor = info.color; lucide.createIcons({ nodes: [app.elements.alertIcon] }); },
-        updateSummary() { /* This function remains the same */ if (!app.state.weatherData || !app.state.tidalData?.minutely_15) return; const stationWeather = app.state.weatherData[app.state.selectedWeatherStationId]; const { hourly } = stationWeather; const weatherIdx = hourly.time.findIndex(t => t.startsWith(new Date().toISOString().slice(0, 13))); if (weatherIdx === -1) return; const maxTide = Math.max(...app.state.tidalData.minutely_15.sea_level_height_msl.slice(0, 4 * 48)); app.elements.summaryContainer.innerHTML = `<div class="flex justify-between items-center"><span class="font-semibold flex items-center"><i data-lucide="thermometer" class="w-4 h-4 mr-2 text-gray-500"></i>Suhu Udara</span><span class="font-bold">${hourly.temperature_2m[weatherIdx]}°C</span></div><div class="flex justify-between items-center"><span class="font-semibold flex items-center"><i data-lucide="wind" class="w-4 h-4 mr-2 text-gray-500"></i>Kecepatan Angin</span><span>${hourly.wind_speed_10m[weatherIdx]} km/j</span></div><div class="flex justify-between items-center"><span class="font-semibold flex items-center"><i data-lucide="waves" class="w-4 h-4 mr-2 text-gray-500"></i>Pasang Tertinggi (48j)</span><span class="font-bold text-pertamina-blue">${maxTide.toFixed(2)} m</span></div>`; lucide.createIcons({ nodes: app.elements.summaryContainer.querySelectorAll('[data-lucide]') }); },
-        updateStationList() { /* This function remains the same */ app.elements.stationList.innerHTML = ''; app.state.stationData.forEach(station => { const statusInfo = this.getStatusInfo(station.status); const item = document.createElement('div'); item.className = 'flex justify-between items-center p-2.5 rounded-md hover:bg-gray-50 cursor-pointer border-l-4'; item.style.borderColor = statusInfo.color; item.onclick = () => app.state.map.setView(station.coords, 14); item.innerHTML = `<div><p class="font-semibold">${station.name}</p><p class="text-xs text-gray-500">Ketinggian: ${station.waterLevel.toFixed(2)} m</p></div><span class="px-2 py-1 text-xs font-bold text-white rounded-full" style="background-color: ${statusInfo.color};">${station.status}</span>`; app.elements.stationList.appendChild(item); }); },
-        populateStationDropdown() { /* This function remains the same */ app.elements.stationSelect.innerHTML = ''; app.config.stations.forEach(s => { const opt = document.createElement('option'); opt.value = s.id; opt.textContent = s.name; app.elements.stationSelect.appendChild(opt); }); },
+        initializeMap() { if (app.state.map) return; app.state.map = L.map(app.elements.map).setView([1.2, 101.45], 9); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(app.state.map); app.config.stations.forEach(s => { app.state.markers[s.id] = L.marker(s.coords).addTo(app.state.map); }); },
+        updateMapMarkers() { if (!app.state.map || app.state.stationData.length === 0) return; app.state.stationData.forEach(station => { const marker = app.state.markers[station.id]; const statusInfo = this.getStatusInfo(station.status); marker.setIcon(this.createMarkerIcon(statusInfo.color)); marker.unbindPopup().bindPopup(this.createPopupContent(station, statusInfo)); }); },
+        createMarkerIcon(color) { const html = `<div class="relative flex justify-center items-center"><div class="pulse" style="background-color: ${color};"></div><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="${color}" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="relative map-marker-svg"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>`; return L.divIcon({ html, className: '', iconSize: [28, 28], iconAnchor: [14, 28] }); },
+        createPopupContent(station, statusInfo) { const container = document.createElement('div'); container.innerHTML = `<div class="popup-title">${station.name}</div><div class="text-sm space-y-1"><div class="flex justify-between"><span>Status:</span> <strong style="color: ${statusInfo.color};">${station.status}</strong></div><div class="flex justify-between"><span>Ketinggian:</span> <strong>${station.waterLevel.toFixed(2)} m</strong></div></div><div class="mt-3 flex space-x-2"><button class="popup-button popup-button-primary flex-1" data-action="history">Riwayat</button><button class="popup-button popup-button-secondary flex-1" data-action="cctv">CCTV</button></div>`; container.querySelector('[data-action="history"]').addEventListener('click', () => this.openModal('history', station.id)); container.querySelector('[data-action="cctv"]').addEventListener('click', () => this.openModal('cctv', station.id)); return container; },
+        updateGeneralAlert() { const counts = app.state.stationData.reduce((acc, s) => { acc[s.status] = (acc[s.status] || 0) + 1; return acc; }, {}); const overallStatus = counts.Bahaya > 0 ? "Bahaya" : counts.Waspada > 0 ? "Waspada" : "Aman"; const info = this.getStatusInfo(overallStatus); app.elements.alertIcon.setAttribute('data-lucide', info.icon); app.elements.alertTitle.textContent = `Status Peringatan: ${info.text}`; app.elements.alertMessage.textContent = info.message; app.elements.generalAlert.style.backgroundColor = info.bgColor; app.elements.generalAlert.style.borderColor = info.color; app.elements.generalAlert.classList.add('border-l-4'); app.elements.alertIconContainer.style.backgroundColor = info.color; lucide.createIcons({ nodes: [app.elements.alertIcon] }); },
+        updateSummary() { if (!app.state.weatherData || !app.state.tidalData?.minutely_15) return; const stationWeather = app.state.weatherData[app.state.selectedWeatherStationId]; const { hourly } = stationWeather; const weatherIdx = hourly.time.findIndex(t => new Date(t) > new Date()); if (weatherIdx === -1) return; const maxTide = Math.max(...app.state.tidalData.minutely_15.sea_level_height_msl.slice(0, 4 * 48)); app.elements.summaryContainer.innerHTML = `<div class="flex justify-between items-center"><span class="font-semibold flex items-center"><i data-lucide="thermometer" class="w-4 h-4 mr-2 text-gray-500"></i>Suhu Udara</span><span class="font-bold">${hourly.temperature_2m[weatherIdx]}°C</span></div><div class="flex justify-between items-center"><span class="font-semibold flex items-center"><i data-lucide="wind" class="w-4 h-4 mr-2 text-gray-500"></i>Kecepatan Angin</span><span>${hourly.wind_speed_10m[weatherIdx]} km/j</span></div><div class="flex justify-between items-center"><span class="font-semibold flex items-center"><i data-lucide="waves" class="w-4 h-4 mr-2 text-gray-500"></i>Pasang Tertinggi (48j)</span><span class="font-bold text-pertamina-blue">${maxTide.toFixed(2)} m</span></div>`; lucide.createIcons({ nodes: app.elements.summaryContainer.querySelectorAll('[data-lucide]') }); },
+        updateStationList() { app.elements.stationList.innerHTML = ''; app.state.stationData.forEach(station => { const statusInfo = this.getStatusInfo(station.status); const item = document.createElement('div'); item.className = 'flex justify-between items-center p-2.5 rounded-md hover:bg-gray-50 cursor-pointer border-l-4'; item.style.borderColor = statusInfo.color; item.onclick = () => app.state.map.setView(station.coords, 14); item.innerHTML = `<div><p class="font-semibold">${station.name}</p><p class="text-xs text-gray-500">Ketinggian: ${station.waterLevel.toFixed(2)} m</p></div><span class="px-2 py-1 text-xs font-bold text-white rounded-full" style="background-color: ${statusInfo.color};">${station.status}</span>`; app.elements.stationList.appendChild(item); }); },
+        populateStationDropdown() { app.elements.stationSelect.innerHTML = ''; app.config.stations.forEach(s => { const opt = document.createElement('option'); opt.value = s.id; opt.textContent = s.name; app.elements.stationSelect.appendChild(opt); }); },
         
-        // --- NEW & REVISED WEATHER FUNCTIONS ---
-        
-        updateWeatherDisplayForHour(hourlyData, index) {
+        updateWeatherDisplayForHour(index) {
+            const hourlyData = app.state.dayHourlyData;
             if (!hourlyData || hourlyData.time[index] === undefined) return;
         
             const time = new Date(hourlyData.time[index]);
@@ -251,24 +250,25 @@ const app = {
             const startIndex = hourly.time.findIndex(t => t.startsWith(dateString));
             if (startIndex === -1) return;
         
-            const dayHourlyData = Object.keys(hourly).reduce((acc, key) => {
+            app.state.dayHourlyData = Object.keys(hourly).reduce((acc, key) => {
                 acc[key] = hourly[key].slice(startIndex, startIndex + 24);
                 return acc;
             }, {});
             
-            let initialDisplayIndex = dayHourlyData.time.findIndex(t => t.endsWith("12:00"));
+            let initialDisplayIndex = app.state.dayHourlyData.time.findIndex(t => t.endsWith("12:00"));
             if (dateString === new Date().toISOString().slice(0, 10)) {
                 const now = new Date();
-                initialDisplayIndex = dayHourlyData.time.reduce((closest, curr, i) => 
-                    (Math.abs(new Date(curr) - now) < Math.abs(new Date(dayHourlyData.time[closest]) - now) ? i : closest), 0);
+                initialDisplayIndex = app.state.dayHourlyData.time.reduce((closest, curr, i) => 
+                    (Math.abs(new Date(curr) - now) < Math.abs(new Date(app.state.dayHourlyData.time[closest]) - now) ? i : closest), 0);
             }
+             if (initialDisplayIndex === -1) initialDisplayIndex = 0;
         
-            this.updateWeatherDisplayForHour(dayHourlyData, initialDisplayIndex);
+            this.updateWeatherDisplayForHour(initialDisplayIndex);
             
-            const forecastTimes = dayHourlyData.time.map(t => new Date(t));
-            this.renderTemperatureForecast(forecastTimes, dayHourlyData.temperature_2m, dayHourlyData, initialDisplayIndex);
-            this.renderPrecipitationForecast(forecastTimes, dayHourlyData.precipitation_probability);
-            this.renderWindForecast(forecastTimes, dayHourlyData.wind_speed_10m, dayHourlyData.wind_direction_10m);
+            const forecastTimes = app.state.dayHourlyData.time.map(t => new Date(t));
+            this.renderTemperatureForecast(forecastTimes, app.state.dayHourlyData.temperature_2m);
+            this.renderPrecipitationForecast(forecastTimes, app.state.dayHourlyData.precipitation_probability);
+            this.renderWindForecast(forecastTimes, app.state.dayHourlyData.wind_speed_10m, app.state.dayHourlyData.wind_direction_10m);
         },
         
         renderWeatherTab() {
@@ -281,8 +281,6 @@ const app = {
             this.renderDailyForecast(app.state.weatherData[app.state.selectedWeatherStationId].daily);
             this.renderHourlyForecastsForDate(app.state.selectedDate);
         
-            const activeTabId = document.querySelector('.forecast-tab-active')?.dataset.forecastTab || 'temp';
-            this.showForecastTab(activeTabId);
             this.setLoading(false, 'weather');
         },
 
@@ -312,9 +310,11 @@ const app = {
                 container.addEventListener('click', (e) => {
                     const item = e.target.closest('.daily-forecast-item');
                     if (item && item.dataset.date !== app.state.selectedDate) {
+                        this.setLoading(true, 'weather');
                         container.querySelector('.daily-forecast-item.active')?.classList.remove('active');
                         item.classList.add('active');
                         this.renderHourlyForecastsForDate(item.dataset.date);
+                        this.setLoading(false, 'weather');
                     }
                 });
                 container.dataset.listenerAttached = 'true';
@@ -322,21 +322,13 @@ const app = {
             lucide.createIcons({ nodes: container.querySelectorAll('[data-lucide]') });
         },
         
-        showForecastTab(tabId) {
-            app.elements.forecastTabs.forEach(t => t.classList.remove('forecast-tab-active'));
-            app.elements.forecastContentPanels.forEach(p => p.classList.add('hidden'));
-            document.querySelector(`.forecast-tab[data-forecast-tab="${tabId}"]`)?.classList.add('forecast-tab-active');
-            document.getElementById(`${tabId}-forecast-content`)?.classList.remove('hidden');
-            const chart = app.state.charts[{ temp: 'weatherTemp', precip: 'weatherPrecip' }[tabId]];
-            chart?.resize();
-        },
-
-        renderTemperatureForecast(labels, tempData, dayHourlyData, initialDisplayIndex) {
+        renderTemperatureForecast(labels, tempData) {
             const canvas = app.elements.weatherTempChart;
             if (!canvas) return;
             
-            canvas.onmouseout = () => this.updateWeatherDisplayForHour(dayHourlyData, initialDisplayIndex);
-        
+            const isMobile = window.innerWidth < 768;
+            const maxTemp = Math.max(...tempData);
+
             if (app.state.charts.weatherTemp) app.state.charts.weatherTemp.destroy();
             app.state.charts.weatherTemp = new Chart(canvas, {
                 type: 'line',
@@ -344,14 +336,14 @@ const app = {
                 plugins: [ChartDataLabels],
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    onHover: (event, chartElement) => {
-                        if (chartElement.length > 0) this.updateWeatherDisplayForHour(dayHourlyData, chartElement[0].index);
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) this.updateWeatherDisplayForHour(elements[0].index);
                     },
                     plugins: {
                         legend: { display: false },
                         tooltip: { enabled: true, mode: 'index', intersect: false, displayColors: false, callbacks: { title:() => '', label: (c) => `${c.parsed.y.toFixed(1)} °C` } },
                         datalabels: {
-                            display: true,
+                            display: (context) => !isMobile || (context.dataIndex % 3 === 0),
                             align: 'top',
                             color: '#374151',
                             font: { weight: 'bold' },
@@ -359,8 +351,8 @@ const app = {
                         }
                     },
                     scales: {
-                        x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } }, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8, padding: 20 } },
-                        y: { grid: { color: '#e9ecef' }, ticks: { padding: 10, callback: (v) => `${v}°C` } }
+                        x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } }, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 6 } },
+                        y: { grid: { color: '#e9ecef' }, ticks: { padding: 10, callback: (v) => `${v}°` }, max: Math.ceil(maxTemp) + 2 }
                     }
                 }
             });
@@ -370,8 +362,8 @@ const app = {
             const canvas = app.elements.weatherPrecipChart;
             if (!canvas) return;
         
-            const highChanceColor = 'rgba(186, 49, 59, 0.7)'; // Pertamina Red
-            const defaultColor = 'rgba(60, 109, 178, 0.7)'; // Pertamina Blue
+            const highChanceColor = 'rgba(186, 49, 59, 0.9)';
+            const defaultColor = 'rgba(60, 109, 178, 0.7)';
             const backgroundColors = rainProbData.map(p => p > 75 ? highChanceColor : defaultColor);
 
             if (app.state.charts.weatherPrecip) app.state.charts.weatherPrecip.destroy();
@@ -380,9 +372,12 @@ const app = {
                 data: { labels, datasets: [{ data: rainProbData, backgroundColor: backgroundColors, borderWidth: 0, borderRadius: 4, barPercentage: 0.5 }] },
                 options: {
                     responsive: true, maintainAspectRatio: false,
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) this.updateWeatherDisplayForHour(elements[0].index);
+                    },
                     plugins: { legend: { display: false }, tooltip: { enabled: true, displayColors: false, callbacks: { title: () => '', label: (c) => `${c.parsed.y}% chance` } } },
                     scales: {
-                        x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } }, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+                        x: { type: 'time', time: { unit: 'hour', displayFormats: { hour: 'HH:mm' } }, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 6 } },
                         y: { beginAtZero: true, max: 100, grid: { color: '#e9ecef' }, ticks: { callback: (v) => `${v}%` } }
                     }
                 }
@@ -395,38 +390,36 @@ const app = {
             container.innerHTML = '';
         
             labels.forEach((time, index) => {
-                container.innerHTML += `
-                    <div class="wind-forecast-item">
-                        <div class="wind-forecast-time">${time.toLocaleTimeString('id-ID', { hour: '2-digit' })}:00</div>
-                        <i data-lucide="navigation" class="wind-forecast-arrow" style="transform: rotate(${windDirData[index] + 135}deg);"></i>
-                        <div class="wind-forecast-speed">${windSpeedData[index].toFixed(0)} km/j</div>
-                    </div>
+                const item = document.createElement('div');
+                item.className = 'wind-forecast-item';
+                item.innerHTML = `
+                    <div class="wind-forecast-time">${time.toLocaleTimeString('id-ID', { hour: '2-digit' })}:00</div>
+                    <i data-lucide="navigation" class="wind-forecast-arrow" style="transform: rotate(${windDirData[index] + 135}deg);"></i>
+                    <div class="wind-forecast-speed">${windSpeedData[index].toFixed(0)} km/j</div>
                 `;
+                item.addEventListener('click', () => this.updateWeatherDisplayForHour(index));
+                container.appendChild(item);
             });
             lucide.createIcons({ nodes: container.querySelectorAll('[data-lucide]') });
         },
         
         getWmoCodeInfo(code) {
-            // Default values
-            let d = "Cuaca Tidak Diketahui", i = "help-circle", c = "#64748b"; // slate-500
-        
-            if ([0, 1].includes(code)) { d = "Cerah"; i = "sun"; c = "#f59e0b"; } // amber-500
+            let d = "Cuaca Tidak Diketahui", i = "help-circle", c = "#64748b"; 
+            if ([0, 1].includes(code)) { d = "Cerah"; i = "sun"; c = "#f59e0b"; }
             if ([2].includes(code)) { d = "Berawan"; i = "cloud-sun"; c = "#f59e0b"; }
-            if ([3].includes(code)) { d = "Sangat Berawan"; i = "cloud"; c = "#94a3b8"; } // slate-400
-            if ([45, 48].includes(code)) { d = "Kabut"; i = "cloud-fog"; c = "#a1a1aa"; } // zinc-400
-            if (code >= 51 && code <= 67) { d = "Hujan"; i = "cloud-rain"; c = "#3b82f6"; } // blue-500
-            if (code >= 80 && code <= 82) { d = "Hujan Lokal"; i = "cloud-lightning-rain"; c = "#3b82f6"; }
-            if (code >= 95 && code <= 99) { d = "Badai Petir"; i = "zap"; c = "#8b5cf6"; } // violet-500
-        
+            if ([3].includes(code)) { d = "Sangat Berawan"; i = "cloud"; c = "#94a3b8"; }
+            if ([45, 48].includes(code)) { d = "Kabut"; i = "cloud-fog"; c = "#a1a1aa"; }
+            if (code >= 51 && code <= 67) { d = "Hujan"; i = "cloud-rain"; c = "#3b82f6"; }
+            if (code >= 80 && code <= 82) { d = "Hujan Lokal"; i = "cloud-lightning"; c = "#3b82f6"; } // <-- Corrected Icon Name
+            if (code >= 95 && code <= 99) { d = "Badai Petir"; i = "zap"; c = "#8b5cf6"; }
             return { description: d, icon: i, color: c };
         },
 
-        // --- Other functions remain the same ---
-        getWindDirectionName(deg) { /* Same as original */ const dirs = ['Utara', 'Timur Laut', 'Timur', 'Tenggara', 'Selatan', 'Barat Daya', 'Barat', 'Barat Laut']; return dirs[Math.round(deg / 45) % 8]; },
-        getStatusInfo(status) { /* Same as original */ const s = { Bahaya: { c: 'var(--status-bahaya)', bg: '#fee2e2', i: 'shield-alert', t: 'BAHAYA', m: 'Level air berbahaya terdeteksi.'}, Waspada: { c: 'var(--status-waspada)', bg: '#fef3c7', i: 'shield-check', t: 'WASPADA', m: 'Level air meningkat, harap waspada.'}, Aman: { c: 'var(--status-aman)', bg: '#dcfce7', i: 'shield-check', t: 'AMAN', m: 'Semua stasiun dalam kondisi normal.'}}[status]; return { color: s.c, bgColor: s.bg, icon: s.i, text: s.t, message: s.m }; },
-        showError(message) { /* Same as original */ const a = app.elements; a.alertTitle.textContent = "Terjadi Kesalahan"; a.alertMessage.textContent = message; a.generalAlert.style.backgroundColor = '#fee2e2'; a.generalAlert.style.borderColor = 'var(--status-bahaya)'; a.alertIconContainer.style.backgroundColor = 'var(--status-bahaya)'; a.alertIcon.setAttribute('data-lucide', 'alert-triangle'); lucide.createIcons(); },
-        showToast(message, type = 'info') { /* Same as original */ const t = document.createElement('div'); const c = { info: 'bg-gray-700', success: 'bg-green-600', error: 'bg-red-600' }; t.className = `fixed bottom-5 right-5 text-white px-4 py-2 rounded-lg shadow-lg z-[3000] transition-opacity duration-300 ${c[type]}`; t.textContent = message; document.body.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000); },
-        renderTidalChart() { /* This function remains the same, no changes needed */ this.setLoading(true,'chart');if(!app.state.tidalData?.minutely_15){this.setLoading(false,'chart');return;}const{time,sea_level_height_msl}=app.state.tidalData.minutely_15;const labels=time.map(t=>new Date(t));const now=new Date();if(app.state.charts.tidal)app.state.charts.tidal.destroy();app.state.charts.tidal=new Chart(app.elements.tidalChart,{type:'line',data:{labels,datasets:[{label:'Ketinggian Permukaan Laut (m)',data:sea_level_height_msl,borderColor:'var(--pertamina-blue)',backgroundColor:'rgba(60, 109, 178, 0.2)',fill:true,tension:0.2,pointRadius:0,pointHoverRadius:5,segment:{borderColor:ctx=>(ctx.p1.parsed.x>now.valueOf()?'var(--pertamina-green)':'var(--pertamina-blue)'),borderDash:ctx=>(ctx.p1.parsed.x>now.valueOf()?[5,5]:undefined)}}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},annotation:{annotations:{nowLine:{type:'line',xMin:now,xMax:now,borderColor:'var(--pertamina-red)',borderWidth:2,label:{content:'Sekarang',display:true,position:'start',color:'white',backgroundColor:'var(--pertamina-red)',font:{weight:'bold'}}}}}},scales:{x:{type:'time',time:{unit:'hour',displayFormats:{hour:'dd-MMM HH:mm'}},grid:{display:false},ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:4}},y:{title:{display:true,text:'Ketinggian (m MSL)'},grid:{color:'#e2e8f0'}}}}});this.setLoading(false,'chart');},
+        getWindDirectionName(deg) { const dirs = ['Utara', 'Timur Laut', 'Timur', 'Tenggara', 'Selatan', 'Barat Daya', 'Barat', 'Barat Laut']; return dirs[Math.round(deg / 45) % 8]; },
+        getStatusInfo(status) { const s = { Bahaya: { c: 'var(--status-bahaya)', bg: '#fee2e2', i: 'shield-alert', t: 'BAHAYA', m: 'Level air berbahaya terdeteksi.'}, Waspada: { c: 'var(--status-waspada)', bg: '#fef3c7', i: 'shield-check', t: 'WASPADA', m: 'Level air meningkat, harap waspada.'}, Aman: { c: 'var(--status-aman)', bg: '#dcfce7', i: 'shield-check', t: 'AMAN', m: 'Semua stasiun dalam kondisi normal.'}}[status]; return { color: s.c, bgColor: s.bg, icon: s.i, text: s.t, message: s.m }; },
+        showError(message) { const a = app.elements; a.alertTitle.textContent = "Terjadi Kesalahan"; a.alertMessage.textContent = message; a.generalAlert.style.backgroundColor = '#fee2e2'; a.generalAlert.style.borderColor = 'var(--status-bahaya)'; a.alertIconContainer.style.backgroundColor = 'var(--status-bahaya)'; a.alertIcon.setAttribute('data-lucide', 'alert-triangle'); lucide.createIcons(); },
+        showToast(message, type = 'info') { const t = document.createElement('div'); const c = { info: 'bg-gray-700', success: 'bg-green-600', error: 'bg-red-600' }; t.className = `fixed bottom-5 right-5 text-white px-4 py-2 rounded-lg shadow-lg z-[3000] transition-opacity duration-300 ${c[type]}`; t.textContent = message; document.body.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000); },
+        renderTidalChart() { this.setLoading(true,'chart');if(!app.state.tidalData?.minutely_15){this.setLoading(false,'chart');return;}const{time,sea_level_height_msl}=app.state.tidalData.minutely_15;const labels=time.map(t=>new Date(t));const now=new Date();if(app.state.charts.tidal)app.state.charts.tidal.destroy();app.state.charts.tidal=new Chart(app.elements.tidalChart,{type:'line',data:{labels,datasets:[{label:'Ketinggian Permukaan Laut (m)',data:sea_level_height_msl,borderColor:'var(--pertamina-blue)',backgroundColor:'rgba(60, 109, 178, 0.2)',fill:true,tension:0.2,pointRadius:0,pointHoverRadius:5,segment:{borderColor:ctx=>(ctx.p1.parsed.x>now.valueOf()?'var(--pertamina-green)':'var(--pertamina-blue)'),borderDash:ctx=>(ctx.p1.parsed.x>now.valueOf()?[5,5]:undefined)}}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},annotation:{annotations:{nowLine:{type:'line',xMin:now,xMax:now,borderColor:'var(--pertamina-red)',borderWidth:2,label:{content:'Sekarang',display:true,position:'start',color:'white',backgroundColor:'var(--pertamina-red)',font:{weight:'bold'}}}}}},scales:{x:{type:'time',time:{unit:'hour',displayFormats:{hour:'dd-MMM HH:mm'}},grid:{display:false},ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:4}},y:{title:{display:true,text:'Ketinggian (m MSL)'},grid:{color:'#e2e8f0'}}}}});this.setLoading(false,'chart');},
         openModal(type,stationId){const station=app.config.stations.find(s=>s.id===stationId);if(!station)return;const modal=document.getElementById(`${type}-modal`);if(type==='history'){app.elements.historyModalTitle.textContent=`Riwayat & Prediksi: ${station.name}`;this.renderHistoryChart(station);}else if(type==='cctv'){const stationData=app.state.stationData.find(s=>s.id===stationId);app.elements.cctvModalTitle.textContent=`CCTV: ${station.name}`;this.updateCctvVisuals(stationData);}modal.classList.remove('hidden');modal.classList.add('flex');},
         closeModal(type){document.getElementById(`${type}-modal`).classList.add('hidden');},
         renderHistoryChart(station){this.setLoading(true,'history');if(!app.state.tidalData?.minutely_15){this.setLoading(false,'history');return;}const{time,sea_level_height_msl}=app.state.tidalData.minutely_15;const labels=time.map(t=>new Date(t));const stationSeaLevel=sea_level_height_msl.map(level=>{const error=1+(Math.random()-0.5)*0.10;return Math.max(0,level*error);});const now=new Date();if(app.state.charts.history)app.state.charts.history.destroy();app.state.charts.history=new Chart(app.elements.historyChart,{type:'line',data:{labels,datasets:[{label:`Ketinggian Air (m) - ${station.name}`,data:stationSeaLevel,borderColor:'var(--pertamina-blue)',backgroundColor:'rgba(60, 109, 178, 0.2)',fill:true,tension:0.2,pointRadius:0,segment:{borderColor:ctx=>(ctx.p1.parsed.x>now.valueOf()?'var(--pertamina-green)':'var(--pertamina-blue)'),borderDash:ctx=>(ctx.p1.parsed.x>now.valueOf()?[5,5]:undefined)}}]},options:{responsive:true,maintainAspectRatio:false,plugins:{annotation:{annotations:{nowLine:{type:'line',xMin:now,xMax:now,borderColor:'var(--pertamina-red)',borderWidth:2,label:{content:'Sekarang',display:true,position:'start'}}}}},scales:{x:{type:'time',time:{unit:'day'}},y:{title:{display:true,text:'Ketinggian (m MSL)'}}}}});this.setLoading(false,'history');},
