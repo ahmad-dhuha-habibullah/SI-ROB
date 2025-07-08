@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XMTYF8NTG9"></script>
@@ -100,66 +101,64 @@
         </div>
 
         <!-- Info Cuaca Tab -->
-        <div id="cuaca-content" class="tab-content hidden">
-             <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <h1 class="text-2xl font-bold text-pertamina-blue">Informasi Cuaca Detail</h1>
-                    <div>
-                        <label for="station-select" class="text-sm font-medium">Pilih Stasiun:</label>
-                        <select id="station-select" class="mt-1 block w-full md:w-64 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-pertamina-blue focus:border-pertamina-blue sm:text-sm rounded-md"></select>
-                    </div>
-                </div>
+<div id="cuaca-content" class="tab-content hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <h1 class="text-2xl font-bold text-pertamina-blue text-center w-full">Informasi Cuaca Detail</h1>
+            <div class="w-full md:w-auto flex-shrink-0">
+                <label for="station-select" class="text-sm font-medium sr-only">Pilih Stasiun:</label>
+                <select id="station-select" class="block w-full md:w-64 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-pertamina-blue focus:border-pertamina-blue sm:text-sm rounded-md"></select>
+            </div>
+        </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="md:col-span-1 bg-gray-50 p-4 rounded-lg border flex flex-col items-center justify-center text-center">
-                        <h3 class="font-bold text-lg mb-2" id="current-weather-location"></h3>
-                        <i id="weather-icon-main" data-lucide="cloud-sun" class="w-20 h-20 text-pertamina-blue"></i>
-                        <p id="weather-description" class="text-xl font-semibold mt-2">Memuat...</p>
-                        <p id="weather-temp-current" class="text-5xl font-bold text-pertamina-black">--°C</p>
-                    </div>
-                    <div class="md:col-span-2 bg-gray-50 p-4 rounded-lg border grid grid-cols-2 sm:grid-cols-3 gap-4 content-center">
-                        <div class="weather-detail-card"><i data-lucide="thermometer-sun" class="w-8 h-8 text-pertamina-red"></i><div><p class="text-sm text-gray-500">Suhu</p><p id="detail-temp" class="font-bold text-lg">--°C</p></div></div>
-                        <div class="weather-detail-card"><i data-lucide="droplets" class="w-8 h-8 text-pertamina-blue"></i><div><p class="text-sm text-gray-500">kelembaban</p><p id="detail-humidity" class="font-bold text-lg">--%</p></div></div>
-                        <div class="weather-detail-card"><i data-lucide="umbrella" class="w-8 h-8 text-blue-500"></i><div><p class="text-sm text-gray-500">Curah Hujan</p><p id="detail-rain" class="font-bold text-lg">-- mm</p></div></div>
-                        <div class="weather-detail-card"><i data-lucide="wind" class="w-8 h-8 text-gray-500"></i><div><p class="text-sm text-gray-500">Kecepatan Angin</p><p id="detail-wind-speed" class="font-bold text-lg">-- km/j</p></div></div>
-<div class="weather-detail-card col-span-2 sm:col-span-1">
-    <i data-lucide="navigation" id="wind-direction-arrow" class="w-8 h-8 text-pertamina-blue transition-transform duration-500 ease-in-out flex-shrink-0"></i>
-    <div class="text-left">
-        <p class="text-sm text-gray-500">Arah Angin</p>
-        <p class="font-bold text-lg leading-tight">
-            <span id="detail-wind-dir">--°</span>
-            <span id="detail-wind-name" class="block text-sm font-medium text-pertamina-blue">--</span>
-        </p>
-    </div>
-</div>
-                    </div>
-                </div>
-
-                <h2 class="text-xl font-bold text-pertamina-blue mb-4">Grafik Prakiraan Cuaca</h2>
-                <div class="flex justify-between items-center mb-4">
-    <button id="download-weather-csv" class="download-button">
-        <i data-lucide="download" class="w-4 h-4 mr-2"></i>
-        Download CSV
-    </button>
-</div>
-                <div id="weather-charts-container" class="relative">
-                    <div id="weather-chart-loader" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-20 rounded-lg"><p>Memuat data grafik...</p></div>
-                    <div class="h-80">
-                        <canvas id="main-weather-chart"></canvas>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 mt-4">
-                        <div class="secondary-chart-container">
-                            <h3 class="secondary-chart-title"><i data-lucide="umbrella" class="w-4 h-4 mr-2"></i>Curah Hujan (mm)</h3>
-                            <div class="h-24"><canvas id="rain-chart"></canvas></div>
-                        </div>
-                        <div class="secondary-chart-container">
-                             <h3 class="secondary-chart-title"><i data-lucide="wind" class="w-4 h-4 mr-2"></i>Kecepatan Angin (km/j)</h3>
-                            <div class="h-24"><canvas id="wind-chart"></canvas></div>
-                        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="md:col-span-1 bg-gray-50 p-4 rounded-lg border flex flex-col items-center justify-center text-center">
+                <h3 class="font-bold text-lg mb-2" id="current-weather-location"></h3>
+                <i id="weather-icon-main" data-lucide="cloud-sun" class="w-20 h-20 text-gray-700"></i>
+                <p id="weather-description" class="text-xl font-semibold mt-2">Memuat...</p>
+                <p id="weather-temp-current" class="text-5xl font-bold text-pertamina-black">--°C</p>
+            </div>
+            
+            <div class="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-4 content-center">
+                <div class="weather-detail-card"><i data-lucide="thermometer" class="w-8 h-8 text-gray-700"></i><div><p class="text-sm text-gray-500">Suhu</p><p id="detail-temp" class="font-bold text-lg">--°C</p></div></div>
+                <div class="weather-detail-card"><i data-lucide="droplets" class="w-8 h-8 text-gray-700"></i><div><p class="text-sm text-gray-500">Kelembaban</p><p id="detail-humidity" class="font-bold text-lg">--%</p></div></div>
+                <div class="weather-detail-card"><i data-lucide="umbrella" class="w-8 h-8 text-gray-700"></i><div><p class="text-sm text-gray-500">Curah Hujan</p><p id="detail-rain" class="font-bold text-lg">-- mm</p></div></div>
+                <div class="weather-detail-card"><i data-lucide="wind" class="w-8 h-8 text-gray-700"></i><div><p class="text-sm text-gray-500">Kecepatan Angin</p><p id="detail-wind-speed" class="font-bold text-lg">-- km/j</p></div></div>
+                <div class="weather-detail-card col-span-2 sm:col-span-1">
+                    <i data-lucide="navigation" id="wind-direction-arrow" class="w-8 h-8 text-gray-700 transition-transform duration-500 ease-in-out flex-shrink-0"></i>
+                    <div class="text-left">
+                        <p class="text-sm text-gray-500">Arah Angin</p>
+                        <p class="font-bold text-lg leading-tight">
+                            <span id="detail-wind-dir">--°</span>
+                            <span id="detail-wind-name" class="block text-sm font-medium text-pertamina-blue">--</span>
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
+
+        <div id="weather-forecast-container">
+            <div class="flex border-b border-gray-300">
+                <button data-forecast-tab="temp" class="forecast-tab forecast-tab-active"><i data-lucide="thermometer" class="w-4 h-4 mr-2"></i>Temperatur</button>
+                <button data-forecast-tab="precip" class="forecast-tab"><i data-lucide="umbrella" class="w-4 h-4 mr-2"></i>Curah Hujan</button>
+                <button data-forecast-tab="wind" class="forecast-tab"><i data-lucide="wind" class="w-4 h-4 mr-2"></i>Angin</button>
+            </div>
+            <div class="relative mt-4 h-48">
+                <div id="weather-chart-loader" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-20 rounded-lg"><p>Memuat data grafik...</p></div>
+                <div id="temp-forecast-content" class="forecast-content-panel w-full h-full"><canvas id="weather-temp-chart"></canvas></div>
+                <div id="precip-forecast-content" class="forecast-content-panel w-full h-full hidden"><canvas id="weather-precip-chart"></canvas></div>
+                <div id="wind-forecast-content" class="forecast-content-panel w-full h-full hidden overflow-x-auto">
+                    <div id="weather-wind-display" class="flex h-full items-center"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <h2 class="text-xl font-bold text-pertamina-blue mb-4">Prakiraan 7 Hari</h2>
+            <div id="daily-forecast-container" class="grid grid-cols-4 md:grid-cols-7 gap-2 text-center"></div>
+        </div>
+    </div>
+</div>
         
         <!-- Prediksi Pasang Surut Tab -->
         <div id="pasut-content" class="tab-content hidden">
@@ -274,8 +273,6 @@
         </div>
         <div class="hint-arrow"></div>
     </div>
-
-    <script src="script.js"></script>
 </body>
 </html>
 

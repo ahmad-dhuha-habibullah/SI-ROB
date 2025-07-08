@@ -342,3 +342,79 @@ body {
 .download-button:hover {
     background-color: #89a320; /* Darker green */
 }
+
+/* --- 11. Interactive Weather Forecast (New) --- */
+.forecast-tab {
+    padding: 0.5rem 1rem;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.forecast-tab:hover {
+    color: var(--pertamina-blue);
+    background-color: #f8fafc; /* slate-50 */
+}
+
+.forecast-tab.forecast-tab-active {
+    color: var(--pertamina-blue);
+    font-weight: 700;
+    border-bottom-color: var(--pertamina-blue);
+}
+
+.forecast-content-panel {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Wind Display Styles */
+.wind-forecast-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+    flex-shrink: 0;
+    width: 80px;
+    height: 100%;
+    padding: 1rem 0;
+    border-right: 1px solid var(--border-color);
+}
+.wind-forecast-item:last-child { border-right: none; }
+.wind-forecast-time { font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); }
+.wind-forecast-speed { font-size: 1rem; font-weight: 600; margin: auto 0; }
+.wind-forecast-arrow { font-size: 1.5rem; color: var(--pertamina-blue); transition: transform 0.5s ease-in-out; }
+
+/* Daily Forecast Styles */
+.daily-forecast-item {
+    padding: 0.75rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: white;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+}
+.daily-forecast-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+.daily-forecast-day { font-weight: 600; }
+.daily-forecast-icon { margin: 0.5rem auto; }
+.daily-forecast-temps { font-size: 0.875rem; }
+.daily-forecast-temps .low-temp { color: var(--text-secondary); }
+
+.daily-forecast-item.active {
+    border-color: var(--pertamina-blue);
+    background-color: #eef2ff; /* A light blue shade */
+    transform: translateY(-4px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
