@@ -15,7 +15,14 @@ const app = {
             bahaya: 2,
             waspada: 1.8
         },
-        updateInterval: 300000 // 5 minutes
+        updateInterval: 300000, // 5 minutes
+        urlPaths: {
+            'beranda': 'Beranda',
+            'cuaca': 'Informasi-Cuaca',
+            'pasut': 'Prediksi-Pasang-Surut',
+            'riwayat-banjir': 'Arsip-Banjir',
+            'tentang-kami': 'Tentang-Kami'
+        }
     },
     state: {
         stationData: [],
@@ -281,6 +288,7 @@ const app = {
         this.ui.updateClock();
         setInterval(this.ui.updateClock, 1000);
         lucide.createIcons();
+        this.ui.handleInitialURL();
         this.ui.showTab('beranda', true);
         this.loadInitialData();
     },
@@ -330,7 +338,10 @@ const app = {
     },
 
     setupEventListeners() {
-        this.elements.navTabs.forEach(tab => tab.addEventListener('click', e => this.ui.showTab(e.currentTarget.dataset.tab)));
+        this.elements.navTabs.forEach(tab => tab.addEventListener('click', e => {
+            e.preventDefault(); // Prevent default anchor behavior
+            this.ui.showTab(e.currentTarget.dataset.tab);
+        }));
         this.elements.mobileMenuButton.addEventListener('click', () => {
             const menu = this.elements.mobileNavigationMenu;
             menu.classList.toggle('hidden');
@@ -357,6 +368,9 @@ const app = {
 
         // --- NEW CODE START ---
         this.elements.downloadTidalCsv.addEventListener('click', () => this.data.downloadTidalDataAsCSV());
+        window.addEventListener('popstate', (event) => {
+            this.ui.handleInitialURL(); // Re-use the same logic to show the correct tab
+        });
         // --- NEW CODE END ---
     },
 
@@ -465,32 +479,52 @@ const app = {
             app.elements.datetime.textContent = timeString;
             app.elements.mobileDatetime.textContent = timeString;
         },
+
+                handleInitialURL() {
+            const path = window.location.pathname.substring(window.location.pathname.lastIndexOf('/') + 1);
+            let tabIdToShow = 'beranda'; // Default tab
+
+            // Find which tabId corresponds to the current URL path
+            for (const id in app.config.urlPaths) {
+                // Decode URI component to handle spaces or special characters if any
+                if (decodeURIComponent(app.config.urlPaths[id]) === decodeURIComponent(path)) {
+                    tabIdToShow = id;
+                    break;
+                }
+            }
+            this.showTab(tabIdToShow, true); // Load the tab without pushing to history
+        },
         
     showTab(tabId, isInitial = false) {
-    if (!isInitial && app.state.activeTab === tabId) return;
+            if (!isInitial && app.state.activeTab === tabId) return;
 
-    // Stop the flood map slideshow if leaving that tab
-    if(app.state.activeTab === 'riwayat-banjir') app.floodHistory.stopSlideshow();
+            if(app.state.activeTab === 'riwayat-banjir') app.floodHistory.stopSlideshow();
 
-    app.state.activeTab = tabId;
-    
-    app.elements.tabContents.forEach(c => c.classList.add('hidden'));
-    app.elements.navTabs.forEach(t => t.classList.remove('active'));
-    
-    document.getElementById(`${tabId}-content`).classList.remove('hidden');
-    document.querySelectorAll(`.nav-tab[data-tab="${tabId}"]`).forEach(t => t.classList.add('active'));
-    
-    if (!app.state.isLoading) this.renderActiveTab();
-    
-    if (tabId === 'beranda' && app.state.map) {
-        setTimeout(() => app.state.map.invalidateSize(), 100);
-    } 
-    // Initialize the flood map when its tab is selected
-    else if (tabId === 'riwayat-banjir') {
-        app.floodHistory.init(); 
-        setTimeout(() => { if (app.floodHistory.map) app.floodHistory.map.invalidateSize() }, 100);
-    }
-},
+            app.state.activeTab = tabId;
+
+            app.elements.tabContents.forEach(c => c.classList.add('hidden'));
+            app.elements.navTabs.forEach(t => t.classList.remove('active'));
+
+            document.getElementById(`${tabId}-content`).classList.remove('hidden');
+            document.querySelectorAll(`.nav-tab[data-tab="${tabId}"]`).forEach(t => t.classList.add('active'));
+
+            if (!app.state.isLoading) this.renderActiveTab();
+
+            if (tabId === 'beranda' && app.state.map) {
+                setTimeout(() => app.state.map.invalidateSize(), 100);
+            }
+            else if (tabId === 'riwayat-banjir') {
+                app.floodHistory.init();
+                setTimeout(() => { if (app.floodHistory.map) app.floodHistory.map.invalidateSize() }, 100);
+            }
+
+            // Update URL if not an initial load
+            if (!isInitial) {
+                const path = app.config.urlPaths[tabId] || 'Beranda';
+                const newUrl = `${window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))}/${path}`;
+                window.history.pushState({ tabId: tabId }, '', newUrl);
+            }
+        },
         
         initializeMap() { if (app.state.map) return; app.state.map = L.map(app.elements.map).setView([1.2, 101.45], 9); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(app.state.map); app.config.stations.forEach(s => { app.state.markers[s.id] = L.marker(s.coords).addTo(app.state.map); }); },
         updateMapMarkers() { if (!app.state.map || app.state.stationData.length === 0) return; app.state.stationData.forEach(station => { const marker = app.state.markers[station.id]; const statusInfo = this.getStatusInfo(station.status); marker.setIcon(this.createMarkerIcon(statusInfo.color)); marker.unbindPopup().bindPopup(this.createPopupContent(station, statusInfo)); }); },
