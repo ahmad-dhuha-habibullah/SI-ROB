@@ -32,6 +32,239 @@ const app = {
     },
     elements: {},
 
+
+    floodHistory: {
+    map: null,
+    geoTiffLayer: null,
+    infoControl: null,
+    legendControl: null,
+    mapInitialized: false,
+    currentLayerIndex: 0,
+    intervalId: null,
+
+    layers: [
+        { url: 'geotiff_data/banjir_1/2025-03-03-00_00_2025-03-03-23_59_Sentinel-2_L2A_True_color.tiff', date: '3 Maret 2025', type: 'True Color (Banjir)'},
+        { url: 'geotiff_data/banjir_1/2025-03-03-00_00_2025-03-03-23_59_Sentinel-2_L2A_NDWI.tiff', date: '3 Maret 2025', type: 'NDWI (Banjir)'},
+        { url: 'geotiff_data/banjir_1/2025-03-13-00_00_2025-03-13-23_59_Sentinel-2_L2A_True_color.tiff', date: '13 Maret 2025', type: 'True Color (Pasca-Banjir)'},
+        { url: 'geotiff_data/banjir_1/2025-03-13-00_00_2025-03-13-23_59_Sentinel-2_L2A_NDWI.tiff', date: '13 Maret 2025', type: 'NDWI (Pasca-Banjir)'}
+    ],
+    
+    init() {
+        if (this.map) {
+            this.startSlideshow();
+            return;
+        }
+        
+        this.map = L.map('flood-map').setView([0.533, 101.44], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(this.map);
+
+        this.initControls();
+        this.loadAndDisplayGeoTIFF(this.layers[0]);
+        this.calculateFloodArea();
+        this.startSlideshow();
+    },
+
+    startSlideshow() {
+        if (this.intervalId) clearInterval(this.intervalId);
+        this.intervalId = setInterval(() => this.cycleLayers(), 4000);
+    },
+
+    stopSlideshow() {
+        clearInterval(this.intervalId);
+        this.intervalId = null;
+    },
+
+    initControls() {
+        this.infoControl = L.control({ position: 'topleft' });
+        this.infoControl.onAdd = () => {
+            const div = L.DomUtil.create('div', 'flood-info-control');
+            this.updateInfoControl(div);
+            return div;
+        };
+        this.infoControl.addTo(this.map);
+
+        this.legendControl = L.control({ position: 'bottomright' });
+        this.legendControl.onAdd = () => {
+            const div = L.DomUtil.create('div', 'legend-control');
+            div.innerHTML = `<div class="legend-wrapper"><div class="legend-colorbar"></div><div class="legend-labels"><span>Daratan</span><span>Air</span></div></div>`;
+            return div;
+        };
+        this.legendControl.addTo(this.map);
+    },
+    
+    updateInfoControl(div, props) {
+        const container = div || this.infoControl.getContainer();
+        container.innerHTML = '<h4>Informasi Citra</h4>' + (props ?
+            `<b>Tanggal:</b> ${props.date}<br/><b>Tipe:</b> ${props.type}` :
+            'Memuat data citra...');
+    },
+    
+    async loadAndDisplayGeoTIFF(layerInfo) {
+        try {
+            this.updateInfoControl(null, { date: layerInfo.date, type: 'Memuat...' });
+            const response = await fetch(layerInfo.url);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            const arrayBuffer = await response.arrayBuffer();
+            const tiff = await GeoTIFF.fromArrayBuffer(arrayBuffer);
+            const image = await tiff.getImage();
+            const bbox = image.getBoundingBox();
+            const imageBounds = [[bbox[1], bbox[0]], [bbox[3], bbox[2]]];
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = image.getWidth(); 
+            canvas.height = image.getHeight();
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            
+            if (layerInfo.type.includes('NDWI')) {
+                this.legendControl.getContainer().style.display = 'block';
+                const rasters = await image.readRasters();
+                const ndwiData = rasters[0];
+                const noDataValue = image.getGDALNoData();
+
+                let min = Infinity, max = -Infinity;
+                for (let i = 0; i < ndwiData.length; i++) {
+                    const val = ndwiData[i];
+                    if (val === noDataValue) continue;
+                    if (val < min) min = val;
+                    if (val > max) max = val;
+                }
+                
+                // ✅ FIX: Using the correct buffered normalization from your index.html
+                const range = max - min;
+                const buffer = range * 0.20; // The crucial 0.2 buffer
+                const bufferedMin = min - buffer;
+                const bufferedMax = max + buffer;
+
+                for (let i = 0; i < ndwiData.length; i++) {
+                    let rawValue = ndwiData[i];
+                    if (rawValue === noDataValue) {
+                         imageData.data[i * 4 + 3] = 0;
+                         continue;
+                    }
+                    const normalizedValue = (1 - (rawValue - bufferedMin) / (bufferedMax - bufferedMin)) * 2 - 1;
+                    const [r, g, b, a] = this.ndwiColorizer(normalizedValue);
+                    imageData.data[i * 4] = r; imageData.data[i * 4 + 1] = g; imageData.data[i * 4 + 2] = b; imageData.data[i * 4 + 3] = a;
+                }
+            } else { // True Color Image
+                this.legendControl.getContainer().style.display = 'none';
+                const rgbData = await image.readRasters({ interleave: true });
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    data[i] = rgbData[i/4*3];
+                    data[i + 1] = rgbData[i/4*3+1];
+                    data[i + 2] = rgbData[i/4*3+2];
+                    data[i + 3] = 255;
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+
+            if (this.geoTiffLayer) this.map.removeLayer(this.geoTiffLayer);
+            this.geoTiffLayer = L.imageOverlay(canvas.toDataURL(), imageBounds).addTo(this.map);
+            this.updateInfoControl(null, layerInfo);
+
+            if (!this.mapInitialized) {
+                const bounds = L.latLngBounds(imageBounds);
+                this.map.fitBounds(bounds);
+                this.map.setMaxBounds(bounds.pad(0.1));
+                this.map.options.minZoom = this.map.getZoom();
+                this.mapInitialized = true;
+            }
+        } catch (error) {
+            console.error('Error loading GeoTIFF:', error);
+            this.updateInfoControl(null, { date: layerInfo.date, type: `Error: ${error.message}` });
+        }
+    },
+
+    // ✅ FIX: Removed the duplicate function and kept the correct one.
+    ndwiColorizer(value) {
+        const blue = [0, 0, 255], white = [255, 255, 255], green = [0, 255, 0];
+        if (value > 0.8) return [...blue, 255];
+        if (value < -0.8) return [...green, 255];
+        if (value >= 0) return this.interpolateColor(value, 0, 0.8, white, blue);
+        return this.interpolateColor(value, -0.8, 0, green, white);
+    },
+
+    interpolateColor(value, min, max, startColor, endColor) {
+        const ratio = (value - min) / (max - min);
+        const r = Math.round(startColor[0] + ratio * (endColor[0] - startColor[0]));
+        const g = Math.round(startColor[1] + ratio * (endColor[1] - startColor[1]));
+        const b = Math.round(startColor[2] + ratio * (endColor[2] - startColor[2]));
+        return [r, g, b, 255];
+    },
+    
+    async calculateFloodArea() {
+    const analysisElement = document.getElementById('analysis-text');
+    try {
+        const floodUrl = this.layers.find(l => l.date.includes('3 Maret') && l.type.includes('NDWI'))?.url;
+        const postFloodUrl = this.layers.find(l => l.date.includes('13 Maret') && l.type.includes('NDWI'))?.url;
+
+        if (!floodUrl || !postFloodUrl) {
+            throw new Error("File NDWI untuk analisis tidak ditemukan.");
+        }
+
+        const [floodResponse, postFloodResponse] = await Promise.all([fetch(floodUrl), fetch(postFloodUrl)]);
+        if (!floodResponse.ok || !postFloodResponse.ok) throw new Error("Gagal mengambil file NDWI.");
+        
+        const [floodBuffer, postFloodBuffer] = await Promise.all([floodResponse.arrayBuffer(), postFloodResponse.arrayBuffer()]);
+        const [floodTiff, postFloodTiff] = await Promise.all([GeoTIFF.fromArrayBuffer(floodBuffer), GeoTIFF.fromArrayBuffer(postFloodBuffer)]);
+        const [floodImage, postFloodImage] = await Promise.all([floodTiff.getImage(), postFloodTiff.getImage()]);
+        
+        // ✅ FIX: Using the more accurate area calculation from the original index.html
+        const floodBbox = floodImage.getBoundingBox();
+        const centerLat = (floodBbox[1] + floodBbox[3]) / 2;
+        const resolution = floodImage.getResolution();
+        // This calculates pixel area in square degrees, then converts to meters based on latitude.
+        const pixelAreaDegrees = Math.abs(resolution[0] * resolution[1]);
+        const metersPerDegree = 111320 * Math.cos(centerLat * Math.PI / 180);
+        const pixelAreaMeters = pixelAreaDegrees * Math.pow(metersPerDegree, 2);
+
+        const [floodRasters, postFloodRasters] = await Promise.all([floodImage.readRasters(), postFloodImage.readRasters()]);
+        const floodData = floodRasters[0];
+        const postFloodData = postFloodRasters[0];
+        
+        let affectedPixelCount = 0;
+        
+        // This logic uses a simple normalization and threshold to compare the two images.
+        // It's a robust method for this kind of change detection.
+        for(let i = 0; i < floodData.length; i++) {
+            const floodNdwi = (floodData[i] / 255) * 2 - 1;
+            const postFloodNdwi = (postFloodData[i] / 255) * 2 - 1;
+
+            // Count pixels that were water during the flood (high NDWI) but became land after (low NDWI)
+            if (floodNdwi > 0.5 && postFloodNdwi <= 0.5) {
+                affectedPixelCount++;
+            }
+        }
+
+        const affectedAreaMeters = affectedPixelCount * pixelAreaMeters;
+        const affectedAreaHectares = affectedAreaMeters / 10000;
+        
+        analysisElement.innerHTML = `
+            Estimasi luas wilayah terdampak banjir sementara adalah 
+            <b class="text-pertamina-red text-lg">${affectedAreaHectares.toFixed(2)} hektar</b>.
+            <br><br>
+            <small class="text-gray-500">
+                <b>Sumber Data:</b> Citra satelit Copernicus Sentinel-2.
+                <br>
+                <b>Metodologi:</b> Analisis ini menggunakan indeks <b>Normalized Difference Water Index (NDWI)</b> untuk membedakan badan air dari daratan. Dengan membandingkan citra pada saat banjir (3 Maret 2025) dan pasca-banjir (13 Maret 2025), area yang mengalami genangan sementara dapat diisolasi dan dihitung luasnya. Piksel dengan nilai <b>NDWI > 0.5</b> diklasifikasikan sebagai area tergenang.
+            </small>
+        `;
+
+    } catch(e) {
+        console.error("Gagal menghitung luas area banjir:", e);
+        analysisElement.textContent = "Gagal melakukan analisis area.";
+    }
+},
+    cycleLayers() {
+        this.currentLayerIndex = (this.currentLayerIndex + 1) % this.layers.length;
+        this.loadAndDisplayGeoTIFF(this.layers[this.currentLayerIndex]);
+    }
+},
+
     getLocalDateString(date) {
         const year = date.getFullYear();
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -233,16 +466,31 @@ const app = {
             app.elements.mobileDatetime.textContent = timeString;
         },
         
-        showTab(tabId, isInitial = false) {
-            if (!isInitial && app.state.activeTab === tabId) return;
-            app.state.activeTab = tabId;
-            app.elements.tabContents.forEach(c => c.classList.add('hidden'));
-            app.elements.navTabs.forEach(t => t.classList.remove('active'));
-            document.getElementById(`${tabId}-content`).classList.remove('hidden');
-            document.querySelectorAll(`.nav-tab[data-tab="${tabId}"]`).forEach(t => t.classList.add('active'));
-            if (!app.state.isLoading) this.renderActiveTab();
-            if (tabId === 'beranda' && app.state.map) setTimeout(() => app.state.map.invalidateSize(), 100);
-        },
+    showTab(tabId, isInitial = false) {
+    if (!isInitial && app.state.activeTab === tabId) return;
+
+    // Stop the flood map slideshow if leaving that tab
+    if(app.state.activeTab === 'riwayat-banjir') app.floodHistory.stopSlideshow();
+
+    app.state.activeTab = tabId;
+    
+    app.elements.tabContents.forEach(c => c.classList.add('hidden'));
+    app.elements.navTabs.forEach(t => t.classList.remove('active'));
+    
+    document.getElementById(`${tabId}-content`).classList.remove('hidden');
+    document.querySelectorAll(`.nav-tab[data-tab="${tabId}"]`).forEach(t => t.classList.add('active'));
+    
+    if (!app.state.isLoading) this.renderActiveTab();
+    
+    if (tabId === 'beranda' && app.state.map) {
+        setTimeout(() => app.state.map.invalidateSize(), 100);
+    } 
+    // Initialize the flood map when its tab is selected
+    else if (tabId === 'riwayat-banjir') {
+        app.floodHistory.init(); 
+        setTimeout(() => { if (app.floodHistory.map) app.floodHistory.map.invalidateSize() }, 100);
+    }
+},
         
         initializeMap() { if (app.state.map) return; app.state.map = L.map(app.elements.map).setView([1.2, 101.45], 9); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(app.state.map); app.config.stations.forEach(s => { app.state.markers[s.id] = L.marker(s.coords).addTo(app.state.map); }); },
         updateMapMarkers() { if (!app.state.map || app.state.stationData.length === 0) return; app.state.stationData.forEach(station => { const marker = app.state.markers[station.id]; const statusInfo = this.getStatusInfo(station.status); marker.setIcon(this.createMarkerIcon(statusInfo.color)); marker.unbindPopup().bindPopup(this.createPopupContent(station, statusInfo)); }); },
@@ -471,7 +719,8 @@ const app = {
         closeModal(type){document.getElementById(`${type}-modal`).classList.add('hidden');},
         renderHistoryChart(station){this.setLoading(true,'history');if(!app.state.tidalData?.minutely_15){this.setLoading(false,'history');return;}const{time,sea_level_height_msl}=app.state.tidalData.minutely_15;const labels=time.map(t=>new Date(t));const stationSeaLevel=sea_level_height_msl.map(level=>{const error=1+(Math.random()-0.5)*0.10;return Math.max(0,level*error);});const now=new Date();if(app.state.charts.history)app.state.charts.history.destroy();app.state.charts.history=new Chart(app.elements.historyChart,{type:'line',data:{labels,datasets:[{label:`Ketinggian Air (m) - ${station.name}`,data:stationSeaLevel,borderColor:'var(--pertamina-blue)',backgroundColor:'rgba(60, 109, 178, 0.2)',fill:true,tension:0.2,pointRadius:0,segment:{borderColor:ctx=>(ctx.p1.parsed.x>now.valueOf()?'var(--pertamina-green)':'var(--pertamina-blue)'),borderDash:ctx=>(ctx.p1.parsed.x>now.valueOf()?[5,5]:undefined)}}]},options:{responsive:true,maintainAspectRatio:false,plugins:{annotation:{annotations:{nowLine:{type:'line',xMin:now,xMax:now,borderColor:'var(--pertamina-red)',borderWidth:2,label:{content:'Sekarang',display:true,position:'start'}}}}},scales:{x:{type:'time',time:{unit:'day'}},y:{title:{display:true,text:'Ketinggian (m MSL)'}}}}});this.setLoading(false,'history');},
         updateCctvVisuals(station){const maxLevel=2.5;const percent=Math.min(100,(station.waterLevel/maxLevel)*100);app.elements.waterLevelOverlay.style.height=`${percent}%`;app.elements.waterLevelText.textContent=`${station.waterLevel.toFixed(2)} m`;app.elements.virtualTideStaff.innerHTML='';for(let i=0;i<=maxLevel;i+=0.5){const el=document.createElement('div');el.className='w-full text-right pr-2 text-xs font-mono border-t border-gray-500';el.style.flexBasis=`${(0.5/maxLevel)*100}%`;el.innerHTML=`<span>${i.toFixed(1)}</span>`;app.elements.virtualTideStaff.appendChild(el);}},
-    }
+    },
+
 };
 
 document.addEventListener('DOMContentLoaded', () => app.init());

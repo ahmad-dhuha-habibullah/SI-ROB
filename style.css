@@ -424,3 +424,79 @@ body {
     align-items: center;
     justify-content: center;
 }
+
+
+.leaflet-top.leaflet-center,
+.leaflet-bottom.leaflet-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none; /* Allows clicking on the map beneath */
+    width: auto;
+}
+.leaflet-top.leaflet-center .leaflet-control,
+.leaflet-bottom.leaflet-center .leaflet-control {
+    pointer-events: auto; /* Re-enables events for the actual controls */
+    margin-bottom: 10px;
+}
+
+/* Style for the information box in the top-center */
+.flood-info-control {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    font-size: 0.9em;
+    min-width: 220px;
+    border: 1px solid var(--border-color);
+}
+.flood-info-control h4 {
+    margin: 0 0 8px 0;
+    font-weight: 700;
+    color: var(--pertamina-blue);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+.flood-info-control b {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Style for the NDWI colorbar legend in the bottom-center */
+.legend-control {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 8px 12px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    border: 1px solid var(--border-color);
+}
+.legend-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.legend-labels {
+    display: flex;
+    width: 200px;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+.legend-colorbar {
+    width: 200px;
+    height: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: linear-gradient(to right, rgb(0, 128, 0), rgb(255, 255, 255) 50%, rgb(0, 0, 204));
+}
+
+/* Style for the source attribution text */
+.source-control {
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 10px;
+    color: #333;
+}
