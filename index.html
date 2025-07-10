@@ -200,7 +200,7 @@
                     <div id="flood-map" class="w-full h-full"></div>
                 </div>
                 <div class="lg:w-1/3 w-full flex flex-col">
-                    <div class="bg-gray-50 p-4 rounded-lg shadow-inner border">
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-inner border flex-grow">
                         <h2 class="text-xl font-bold mb-4 text-pertamina-blue flex items-center">
                             <i data-lucide="area-chart" class="w-5 h-5 mr-2"></i>
                             Analisis Dampak Banjir
@@ -213,7 +213,7 @@
     </div>
 
         <div id="tentang-kami-content" class="tab-content hidden">
-            <div class="bg-white p-8 rounded-lg shadow-lg max-w-4xl mx-auto border border-gray-200">
+            <div class="bg-white p-8 rounded-lg shadow-lg max-w-5xl mx-auto border border-gray-200">
                 <img src="si-rob-logo.png" alt="SI-ROB Logo" class="h-20 mx-auto mb-6" onerror="this.onerror=null;this.src='https://placehold.co/400x100/FFFFFF/3C6DB2?text=SI-ROB';">
                 <h1 class="text-3xl font-bold text-pertamina-blue mb-4 text-center">Tentang SI-ROB</h1>
                 <p class="text-lg text-gray-700 leading-relaxed text-center mb-8">
@@ -223,23 +223,66 @@
                     <div class="border-t-4 border-pertamina-blue pt-4">
                         <h2 class="text-2xl font-bold text-pertamina-blue mb-3 flex items-center"><i data-lucide="list-checks" class="w-6 h-6 mr-2"></i>Fitur Utama</h2>
                         <ul class="list-disc list-inside space-y-2">
-                            <li>Pemantauan Real-Time pada Peta Interaktif</li>
-                            <li>Integrasi Data Cuaca & Pasut dari Open-Meteo</li>
-                            <li>Sistem Peringatan Dini 3 Tingkat (Aman, Waspada, Bahaya)</li>
-                            <li>Analisis Data Historis & Prakiraan 5 Hari</li>
-                            <li>Visualisasi Data Cuaca Multi-Grafik</li>
-                            <li>Antarmuka Responsif dan Intuitif</li>
+                                    <li>Pemantauan Real-Time pada Peta Interaktif</li>
+                                    <li>Integrasi Data Cuaca & Pasang Surut</li>
+                                    <li>Sistem Peringatan Dini 3 Tingkat (Aman, Waspada, Bahaya)</li>
+                                    <li>Arsip Citra Satelit untuk Analisis Kejadian Banjir</li>
+                                    <li>Analisis Estimasi Luas Terdampak Banjir (NDWI)</li>
+                                    <li>Prakiraan Cuaca 7 Hari & Grafik Interaktif</li>
+                                    <li>Fitur Unduh Data Pasang Surut (CSV)</li>
+                                    <li>Notifikasi Peringatan Dini via Email</li>
                         </ul>
                     </div>
                      <div class="border-t-4 border-pertamina-green pt-4">
                         <h2 class="text-2xl font-bold text-pertamina-green mb-3 flex items-center"><i data-lucide="database" class="w-6 h-6 mr-2"></i>Sumber Data</h2>
                         <ul class="list-disc list-inside space-y-2">
+                            <li><strong>Citra Satelit:</strong> Copernicus Sentinel-2</li>
                             <li><strong>Cuaca:</strong> Open-Meteo Weather Forecast API</li>
                             <li><strong>Pasang Surut:</strong> Open-Meteo Marine API</li>
                             <li><strong>Peta:</strong> OpenStreetMap & Leaflet.js</li>
-                            <li><strong>Ikon:</strong> Lucide Icons</li>
-                            <li><strong>Grafik:</strong> Chart.js</li>
+                            <li><strong>Grafik & Ikon:</strong> Chart.js & Lucide Icons</li>
                         </ul>
+                    </div>
+                </div>
+
+                <div class="border-t-4 border-pertamina-red pt-4 mt-12">
+    <h2 class="text-2xl font-bold text-pertamina-red mb-6 flex items-center justify-center"><i data-lucide="flask-conical" class="w-6 h-6 mr-2"></i>Rencana Pengembangan & Prototipe</h2>
+    <div class="bg-slate-50 p-6 rounded-lg border border-gray-200 text-justify">
+        <p>Sistem yang ditampilkan saat ini merupakan <b>versi demo</b> untuk proposal PFSAINS 2025 yang berfokus pada visualisasi data dan antarmuka pengguna, dengan data yang disimulasikan berdasarkan API publik. Pengembangan selanjutnya adalah validasi lapangan dengan perangkat keras sesungguhnya.</p>
+        <p class="mt-4">Rencana pengembangan mencakup dua fitur utama untuk meningkatkan akurasi dan validasi data secara <i>real-time</i>:</p>
+        <ul class="list-disc list-inside mt-2 space-y-2">
+            <li><b>Integrasi Sensor In-Situ via MQTT:</b> Pemasangan stasiun sensor tinggi muka air (pasut/sungai) di salah satu lokasi virtual. Data telemetri dari sensor akan dikirim secara <i>real-time</i> via protokol MQTT untuk kalibrasi dan validasi model prediksi yang lebih akurat.</li>
+            <li><b>Live Feed CCTV:</b> Pemanfaatan kamera CCTV untuk pemantauan visual. Protokol MQTT juga dapat digunakan untuk mengirim notifikasi dan <i>snapshot</i> gambar secara efisien, sementara <i>streaming</i> video diakses melalui protokol terpisah (seperti RTSP) untuk menampilkan kondisi lapangan secara langsung di <i>dashboard</i>.</li>
+        </ul>
+        <p class="mt-4">Untuk visualisasi desain dan penempatan perangkat keras, lihat model 3D interaktif kami: <a href="https://app.sketchup.com/share/tc/asia/eysXJAhrtzQ?stoken=RDSWy9l08_CxQs66z2DCu60pAHctV7NrEuqz0DX6lBRRlkvky-FY4WX2sAHuWQCs&source=web" target="_blank" rel="noopener noreferrer" class="text-pertamina-blue underline"><b>di sini</b></a>.</p>
+        
+        <hr class="my-6">
+
+        <h3 class="font-semibold text-center text-lg mb-4 text-gray-700">Dokumentasi Prototipe Awal</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            <div>
+                <img src="Tide Gauge (V1).png" alt="Foto prototipe tide gauge V1" class="w-full h-96 object-cover rounded-lg border border-gray-200 shadow-sm">
+                <p class="text-sm text-gray-600 mt-2"><i>Prototipe Awal Tide Gauge (V1)</i></p>
+            </div>
+            <div>
+                <img src="Tide Gauge (V2).png" alt="Foto prototipe tide gauge V2" class="w-full h-96 object-cover rounded-lg border border-gray-200 shadow-sm">
+                <p class="text-sm text-gray-600 mt-2"><i>Prototipe Awal Tide Gauge (V2)</i></p>
+            </div>
+            <div>
+                <img src="Tide Gauge (3D).png" alt="Foto model 3D tide gauge" class="w-full h-96 object-cover rounded-lg border border-gray-200 shadow-sm">
+                <p class="text-sm text-gray-600 mt-2"><i>Render Model 3D Stasiun Sensor</i></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+                <div class="border-t-4 border-pertamina-green pt-4 mt-12">
+                    <h2 class="text-2xl font-bold text-pertamina-green mb-6 flex items-center justify-center"><i data-lucide="network" class="w-6 h-6 mr-2"></i>Arsitektur Sistem SI-ROB</h2>
+                    <div class="bg-slate-50 p-6 rounded-lg border border-gray-200 text-justify">
+                        <p class="mb-4">Diagram berikut mengilustrasikan alur data dan arsitektur keseluruhan dari sistem SI-ROB, mulai dari akuisisi data di lapangan hingga penyajian informasi kepada pengguna akhir.</p>
+                        <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-inner">
+                            <img src="diagram-sistem-si-rob.png" alt="Diagram Arsitektur Sistem SI-ROB" class="w-full h-auto">
+                        </div>
                     </div>
                 </div>
 

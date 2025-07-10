@@ -251,14 +251,26 @@ const app = {
         const affectedAreaHectares = affectedAreaMeters / 10000;
         
         analysisElement.innerHTML = `
-            Estimasi luas wilayah terdampak banjir sementara adalah 
-            <b class="text-pertamina-red text-lg">${affectedAreaHectares.toFixed(2)} hektar</b>.
-            <br><br>
-            <small class="text-gray-500">
-                <b>Sumber Data:</b> Citra satelit Copernicus Sentinel-2.
-                <br>
-                <b>Metodologi:</b> Analisis ini menggunakan indeks <b>Normalized Difference Water Index (NDWI)</b> untuk membedakan badan air dari daratan. Dengan membandingkan citra pada saat banjir (3 Maret 2025) dan pasca-banjir (13 Maret 2025), area yang mengalami genangan sementara dapat diisolasi dan dihitung luasnya. Piksel dengan nilai <b>NDWI > 0.5</b> diklasifikasikan sebagai area tergenang.
-            </small>
+            <div class="text-justify">
+                <p class="text-lg"> 
+                    Estimasi luas wilayah terdampak banjir sementara adalah 
+                    <b class="text-pertamina-red">${affectedAreaHectares.toFixed(2)} hektar</b>.
+                </p>
+                <div class="text-base mt-4">
+                    <p>
+                        <b>Sumber Data:</b> Citra satelit Copernicus Sentinel-2.
+                    </p>
+                    <p>
+                        <b>Metodologi:</b> Analisis ini menggunakan indeks <b>Normalized Difference Water Index (NDWI)</b> untuk membedakan badan air dari daratan. Dengan membandingkan citra pada saat banjir (3 Maret 2025) dan pasca-banjir (13 Maret 2025), area yang mengalami genangan sementara dapat diisolasi dan dihitung luasnya. Piksel dengan nilai <b>NDWI > 0.5</b> diklasifikasikan sebagai area tergenang.
+                    </p>
+                    <p class="mt-4">
+                        <b>Penting:</b> Perhitungan ini merupakan estimasi berdasarkan data penginderaan jauh. Faktor-faktor seperti tutupan awan, vegetasi lebat, atau bayangan bangunan dapat memengaruhi akurasi. Untuk penilaian dampak yang lebih presisi, diperlukan verifikasi dan validasi lapangan.
+                    </p>
+                    <p class="mt-4">
+                        Klik <a href="https://custom-scripts.sentinel-hub.com/custom-scripts/sentinel-2/ndwi/" target="_blank" rel="noopener noreferrer" class="text-pertamina-blue underline"><b>di sini</b></a> untuk mempelajari lebih lanjut mengenai NDWI.
+                    </p>
+                </div>
+            </div>
         `;
 
     } catch(e) {
@@ -757,7 +769,7 @@ const app = {
         },
 
         getWindDirectionName(deg) { const dirs = ['Utara', 'Timur Laut', 'Timur', 'Tenggara', 'Selatan', 'Barat Daya', 'Barat', 'Barat Laut']; return dirs[Math.round(deg / 45) % 8]; },
-        getStatusInfo(status) { const s = { Bahaya: { c: 'var(--status-bahaya)', bg: '#fee2e2', i: 'shield-alert', t: 'BAHAYA', m: 'Level air berbahaya terdeteksi.'}, Waspada: { c: 'var(--status-waspada)', bg: '#fef3c7', i: 'shield-check', t: 'WASPADA', m: 'Level air meningkat, harap waspada.'}, Aman: { c: 'var(--status-aman)', bg: '#dcfce7', i: 'shield-check', t: 'AMAN', m: 'Semua stasiun dalam kondisi normal.'}}[status]; return { color: s.c, bgColor: s.bg, icon: s.i, text: s.t, message: s.m }; },
+        getStatusInfo(status) { const s = { Bahaya: { c: 'var(--status-bahaya)', bg: '#fee2e2', i: 'shield-alert', t: 'BAHAYA', m: 'Level air berbahaya terdeteksi.'}, Waspada: { c: 'var(--status-waspada)', bg: '#fef3c7', i: 'shield-check', t: 'WASPADA', m: 'Level air meningkat, harap waspada.'}, Aman: { c: 'var(--status-aman)', bg: '#dcfce7', i: 'shield-check', t: 'AMAN', m: 'Tidak ada potensi banjir ROB dalam 6 jam kedepan'}}[status]; return { color: s.c, bgColor: s.bg, icon: s.i, text: s.t, message: s.m }; },
         showError(message) { const a = app.elements; a.alertTitle.textContent = "Terjadi Kesalahan"; a.alertMessage.textContent = message; a.generalAlert.style.backgroundColor = '#fee2e2'; a.generalAlert.style.borderColor = 'var(--status-bahaya)'; a.alertIconContainer.style.backgroundColor = 'var(--status-bahaya)'; a.alertIcon.setAttribute('data-lucide', 'alert-triangle'); lucide.createIcons(); },
         showToast(message, type = 'info') { const t = document.createElement('div'); const c = { info: 'bg-gray-700', success: 'bg-green-600', error: 'bg-red-600' }; t.className = `fixed bottom-5 right-5 text-white px-4 py-2 rounded-lg shadow-lg z-[3000] transition-opacity duration-300 ${c[type]}`; t.textContent = message; document.body.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000); },
         renderTidalChart() { this.setLoading(true,'chart');if(!app.state.tidalData?.minutely_15){this.setLoading(false,'chart');return;}const{time,sea_level_height_msl}=app.state.tidalData.minutely_15;const labels=time.map(t=>new Date(t));const now=new Date();if(app.state.charts.tidal)app.state.charts.tidal.destroy();app.state.charts.tidal=new Chart(app.elements.tidalChart,{type:'line',data:{labels,datasets:[{label:'Ketinggian Permukaan Laut (m)',data:sea_level_height_msl,borderColor:'var(--pertamina-blue)',backgroundColor:'rgba(60, 109, 178, 0.2)',fill:true,tension:0.2,pointRadius:0,pointHoverRadius:5,segment:{borderColor:ctx=>(ctx.p1.parsed.x>now.valueOf()?'var(--pertamina-green)':'var(--pertamina-blue)'),borderDash:ctx=>(ctx.p1.parsed.x>now.valueOf()?[5,5]:undefined)}}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},annotation:{annotations:{nowLine:{type:'line',xMin:now,xMax:now,borderColor:'var(--pertamina-red)',borderWidth:2,label:{content:'Sekarang',display:true,position:'start',color:'white',backgroundColor:'var(--pertamina-red)',font:{weight:'bold'}}}}}},scales:{x:{type:'time',time:{unit:'hour',displayFormats:{hour:'dd-MMM HH:mm'}},grid:{display:false},ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:4}},y:{title:{display:true,text:'Ketinggian (m MSL)'},grid:{color:'#e2e8f0'}}}}});this.setLoading(false,'chart');},
