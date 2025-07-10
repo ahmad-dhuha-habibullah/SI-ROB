@@ -1,4 +1,3 @@
-
 /* --- 1. Root Variables & Base Setup --- */
 :root {
     --pertamina-blue: #3C6DB2;
@@ -209,13 +208,14 @@ body {
     opacity: 1;
 }
 
-#close-history-modal, #close-cctv-modal {
+#close-history-modal, #close-cctv-modal, #close-subscription-modal {
     transition: transform 0.2s ease, color 0.2s ease;
 }
-#close-history-modal:hover, #close-cctv-modal:hover {
+#close-history-modal:hover, #close-cctv-modal:hover, #close-subscription-modal:hover {
     transform: rotate(90deg);
     color: var(--pertamina-red);
 }
+
 
 /* --- 7. Loaders and Spinners --- */
 .loader-text::after {
@@ -499,4 +499,11 @@ body {
     border-radius: 3px;
     font-size: 10px;
     color: #333;
+}
+#subscription-modal.hidden {
+    display: none;
+}
+
+#subscription-modal {
+    display: flex;
 }

@@ -292,6 +292,36 @@
             </div>
         </div>
     </div>
+
+    <div id="subscription-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-4 z-[2100] modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative modal-content text-center">
+            <button id="close-subscription-modal" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 text-blue-600 mb-4">
+                <i data-lucide="bell-ring" class="w-8 h-8"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2 text-gray-800">Dapatkan Notifikasi Banjir</h2>
+            <p class="text-gray-600 mb-6">Masukkan email Anda untuk mendapatkan peringatan dini dan informasi terbaru langsung dari SI-ROB.</p>
+            <form id="subscription-form">
+                <div class="mb-4">
+                    <label for="sub-email" class="sr-only">Alamat Email</label>
+                    <input type="email" id="sub-email" placeholder="Masukkan Email" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                </div>
+                <div class="mb-4">
+                    <label for="sub-phone" class="sr-only">Nomor Telepon (Opsional)</label>
+                    <input type="tel" id="sub-phone" placeholder="Masukkan Nomor Telepon (Opsional)" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-md hover:bg-blue-700 transition-all duration-300 transform hover:scale-105">
+                    Submit
+                </button>
+            </form>
+            <div class="mt-4 flex flex-col sm:flex-row gap-2">
+                <button id="later-button" class="w-full text-sm text-gray-600 font-semibold py-2 px-4 rounded-md hover:bg-gray-100 transition">Lain Kali</button>
+                <button id="dont-show-again-button" class="w-full text-sm text-gray-600 font-semibold py-2 px-4 rounded-md hover:bg-gray-100 transition">Jangan Tampilkan Lagi</button>
+            </div>
+        </div>
+    </div>
     
     <script src="script.js"></script>
     <div id="station-hint-popup" class="station-hint">
